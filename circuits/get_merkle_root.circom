@@ -16,6 +16,10 @@ template GetMerkleRoot(k) {
     var nNodeHashers = nLeaves / 2 - 1;
 
     // Leaves to hash
+    // These are the answers to a multiple choice question. If it's a single answer, it will be the raw
+    // value, if it is a multiple answer, it will be the hash of these multiple values.
+    // This hash function does not really matter as long as it is consitent between creator and solver.
+    // TODO: For the frontend side of things, we will use _____ for creating and solving tests. 
     signal input leaves[nLeaves];
     // Resulting root
     signal output root;
