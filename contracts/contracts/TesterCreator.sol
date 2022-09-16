@@ -21,7 +21,9 @@ interface RequiredPass {
     function balanceOf(address _owner) external view returns (uint256);
 }
 
-contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, ReentrancyGuard {
+contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, ReentrancyGuard {
+    using SafeMath for uint8;
+    using SafeMath for uint32;
     using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -52,11 +54,29 @@ contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metad
     // Token symbol
     string private _symbol;
     
-    struct OnChainTester {
+    struct MultipleChoiceTest {
         uint256 solutionHash;
-        // TODO: add support for prizes as tokens: USDC, DAI, whatnot
-        // they could get added by the OWNER, checked the available via a public function
-        // a future DAO could control this functionality just like the owner
+        uint256 prize;
+        uint32 solvers;
+        uint32 timeLimit;
+        uint32 credentialLimit;
+        address requiredPass;
+        string credentialsGained;
+    }
+
+    struct OpenAnswerTest {
+        mapping(uint8 => uint256) answerHashes;
+        uint256 prize;
+        uint32 solvers;
+        uint32 timeLimit;
+        uint32 credentialLimit;
+        address requiredPass;
+        string credentialsGained;
+    }
+
+    struct MixedTest {
+        uint256 solutionHash;
+        mapping(uint8 => uint256) answerHashes;
         uint256 prize;
         uint32 solvers;
         uint32 timeLimit;
@@ -66,7 +86,10 @@ contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metad
     }
 
     // Mapping containing the information about each of the defined testers
-    mapping(uint256 => OnChainTester) private _testers;
+    mapping(uint256 => uint8) private _testTypes;
+    mapping(uint256 => MultipleChoiceTest) private _multipleChoiceTests;
+    mapping(uint256 => OpenAnswerTest) private _openAnswerTests;
+    mapping(uint256 => MixedTest) private _mixedTests;
 
     // Mapping for token URIs
     mapping (uint256 => string) private _tokenURIs;  // URL containing the multiple choice test for each tester
@@ -132,7 +155,7 @@ contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metad
         return _symbol;
     }
 
-    function createTester(
+    function createMultipleChoiceTest(
         string memory _testerURI, 
         uint256 _solutionHash, 
         uint32 _timeLimit,
@@ -140,21 +163,20 @@ contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metad
         address _requiredPass,
         string memory _credentialGained
     ) external payable {
-        require(_timeLimit > block.timestamp, "Time limit is in the past");
-        require(_credentialLimit > 0, "Credential limit must be above zero");
-        if(_requiredPass != address(0)) {
-            require(RequiredPass(_requiredPass).balanceOf(msg.sender) >= 0);  // dev: invalid required pass address provided
-        }
-
         // Increase the number of testers available
         _nTesters++;
         uint256 _testerId = _nTesters;
 
-        // Setting the given URI that holds all of the questions
-        _tokenURIs[_testerId] = _testerURI;
+        _createTester(
+            _testerId,
+            _testerURI, 
+            _timeLimit,
+            _credentialLimit,
+            _requiredPass
+        );
 
-        // Defining the OnChainTester object for this testerId
-        _testers[_testerId] = OnChainTester(
+        _testTypes[_testerId] = 0;
+        _multipleChoiceTests[_testerId] = MultipleChoiceTest(
             _solutionHash, 
             msg.value,
             0,
@@ -163,6 +185,106 @@ contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metad
             _requiredPass,
             _credentialGained
         );
+    }
+
+    function createOpenAnswerTest(
+        string memory _testerURI, 
+        uint256[] calldata _answerHashes, 
+        uint32 _timeLimit,
+        uint32 _credentialLimit,
+        address _requiredPass,
+        string memory _credentialGained
+    ) external payable {
+        uint8 nQuestions = _answerHashes.length;
+        require(nQuestions <= 50, "Number of questions must be < 50");
+        mapping(uint8 => uint256) _hashesMapping;
+        for (uint8 i = 0; i < nQuestions; i++) {
+            _hashesMapping[i] = _answerHashes[i];
+        }
+
+        // Increase the number of testers available
+        _nTesters++;
+        uint256 _testerId = _nTesters;
+
+        _createTester(
+            _testerId,
+            _testerURI, 
+            _timeLimit,
+            _credentialLimit,
+            _requiredPass
+        );
+        
+        _testTypes[_testerId] = 1;
+        _openAnswerTests[_testerId] = OpenAnswerTest(
+            _hashesMapping, 
+            msg.value,
+            0,
+            _timeLimit,
+            _credentialLimit,
+            _requiredPass,
+            _credentialGained
+        );
+    }
+
+    function createMixedTest(
+        string memory _testerURI, 
+        uint256 _solutionHash,
+        uint256[] calldata _answerHashes, 
+        uint32 _timeLimit,
+        uint32 _credentialLimit,
+        address _requiredPass,
+        string memory _credentialGained
+    ) external payable {
+        uint8 nQuestions = _answerHashes.length;
+        require(nQuestions <= 50, "Number of questions must be < 50");
+        mapping(uint8 => uint256) _hashesMapping;
+        for (uint8 i = 0; i < nQuestions; i++) {
+            _hashesMapping[i] = _answerHashes[i];
+        }
+
+        // Increase the number of testers available
+        _nTesters++;
+        uint256 _testerId = _nTesters;
+
+        _createTester(
+            _testerId,
+            _testerURI, 
+            _timeLimit,
+            _credentialLimit,
+            _requiredPass
+        );
+
+        _testTypes[_testerId] = 2;
+        _mixedTests[_testerId] = MixedTest(
+            _solutionHash, 
+            _hashesMapping,
+            msg.value,
+            0,
+            _timeLimit,
+            _credentialLimit,
+            _requiredPass,
+            _credentialGained
+        );
+    }
+
+    function _createTester(
+        uint256 _testerId,
+        string memory _testerURI, 
+        uint32 _timeLimit,
+        uint32 _credentialLimit,
+        address _requiredPass
+    ) internal payable {
+        require(_timeLimit > block.timestamp, "Time limit is in the past");
+        require(_credentialLimit > 0, "Credential limit must be above zero");
+        if(_requiredPass != address(0)) {
+            require(RequiredPass(_requiredPass).balanceOf(msg.sender) >= 0);  // dev: invalid required pass address provided
+        }
+
+        // Setting the given URI that holds all of the questions
+        _tokenURIs[_testerId] = _testerURI;
+
+        // Defining the test object for this testerId
+        _testTypes[_testerId] = _testType;
 
         // Minting this new nft
         _holderTokens[msg.sender].add(_testerId);
@@ -175,7 +297,10 @@ contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metad
      */
     function getTester(uint256 testerId) external view returns (OnChainTester memory) {
         require(_exists(testerId), "Tester does not exist");
-        return _testers[testerId];
+        uint8 testType = _testTypes[testerId];
+        if ( testType == 0 ) { return _multipleChoiceTests[testerId]; }
+        else if ( testType == 1 ) { return _openAnswerTests[testerId]; }
+        else if ( testType == 2 ) { return _mixedTests[testerId]; }
     }
 
     /**
@@ -208,9 +333,9 @@ contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metad
         bool wasSolved = _testers[testerId].solvers == 0 ? false : true;
         uint256 prize = _testers[testerId].prize;
 
-        // Deletes the corresponding URI and OnChainTester object
-        delete _testers[testerId];
-        delete _tokenURIs[testerId];
+        // Test data still lives on chain but cannot be accessed by smart contract calls
+        /* delete _testers[testerId];
+        delete _tokenURIs[testerId]; */
 
         // Returns the funds to the owner if the test was never solved
         if (!wasSolved) {
@@ -219,6 +344,54 @@ contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metad
 
         emit Transfer(msg.sender, address(0), testerId);
     }
+
+    function solveMultipleChoiceTest(
+        uint256 testerId, 
+        uint[2] calldata a,
+        uint[2][2] calldata b,
+        uint[2] calldata c,
+        uint[2] calldata input  // [solvingHash, salt]
+    ) external nonReentrant {
+
+    }
+
+    function solveOpenAnswerTest(
+        uint256 testerId, 
+        uint[2] calldata a,
+        uint[2][2] calldata b,
+        uint[2] calldata c
+    ) external nonReentrant {
+        
+    }
+
+    function solveMixedTest(
+        uint256 testerId, 
+        uint[2] calldata a,
+        uint[2][2] calldata b,
+        uint[2] calldata c,
+        uint[2] calldata input  // [solvingHash, salt]
+    ) external nonReentrant {
+        
+    }
+
+    function _solveTest(
+        uint256 testerId,
+        uint256 credentialLimit,
+        uint256 timeLimit,
+        address requiredPass
+    ) internal {
+        require(_exists(testerId), "Solving test that does not exist");
+        require(!usedSalts[input[1]], "Salt was already used");
+
+        OnChainTester memory _tester = _testers[testerId];
+        require(msg.sender != ownerOf(testerId), "Tester cannot be solved by owner");
+        require(_tester.credentialLimit == 0 || _tester.solvers < _tester.credentialLimit, "Maximum number of credentials reached");
+        require(block.timestamp <= _tester.timeLimit, "Time limit for this credential reached");
+        if(_tester.requiredPass != address(0)) {
+            require(RequiredPass(_tester.requiredPass).balanceOf(msg.sender) > 0, "Solver does not own the required token");
+        }
+    }
+
 
     // TODO: failed solve reverts tx
     function solveTester(
@@ -233,7 +406,7 @@ contract TesterCreator is SolutionVerifier, ERC165Storage, IERC721, IERC721Metad
 
         OnChainTester memory _tester = _testers[testerId];
         require(msg.sender != ownerOf(testerId), "Tester cannot be solved by owner");
-        require(_tester.solvers < _tester.credentialLimit, "Maximum number of credentials reached");
+        require(_tester.credentialLimit == 0 || _tester.solvers < _tester.credentialLimit, "Maximum number of credentials reached");
         require(block.timestamp <= _tester.timeLimit, "Time limit for this credential reached");
         if(_tester.requiredPass != address(0)) {
             require(RequiredPass(_tester.requiredPass).balanceOf(msg.sender) > 0, "Solver does not own the required token");
