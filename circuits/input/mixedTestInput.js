@@ -3,20 +3,21 @@ const poseidon = require("./poseidon.js");
 const poseidonMerkle = require('./poseidonMerkle.js');
 
 const leafArray = Array.from({length: 64}, (_, i) => 4)
-const salt = "50"
+const multipleChoiceSalt = "250"
 
 const len = 50
 const correctAnswers = new Array(len).fill(poseidon([0]));
 correctAnswers[0] = poseidon(['350'])
 correctAnswers[1] = poseidon(['250'])
-
 const userAnswers = new Array(len).fill(0)
+const openAnswersSalt = "150"
 
 const inputs = {
     multipleChoiceAnswers: leafArray,
-    salt: salt,
+    multipleChoiceSalt: multipleChoiceSalt,
     openAnswersHash: correctAnswers,
-    openAnswers: userAnswers
+    openAnswers: userAnswers,
+    openAnswersSalt: openAnswersSalt
 }
 
 fs.writeFileSync(

@@ -9,9 +9,12 @@ correctAnswers[1] = poseidon(['250'])
 
 const userAnswers = new Array(len).fill(0)
 
+const salt = "350"
+
 const inputs = {
     answersHash: correctAnswers,
-    answers: userAnswers
+    answers: userAnswers,
+    salt: salt
 }
 
 fs.writeFileSync(

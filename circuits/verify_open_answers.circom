@@ -8,6 +8,8 @@ template VerifyOpenAnswers(nQuestions) {
     signal input answersHash[nQuestions];
     // The solver's answers
     signal input answers[nQuestions];
+    // Cryptographic salt
+    signal input salt;
     // Number of the solver's answers that are correct
     // Starts at zero, is increased on correct answer, the test result is computed at the smart contract level
     signal output correctNumber;
@@ -29,6 +31,10 @@ template VerifyOpenAnswers(nQuestions) {
         // Only if the correct answer hash and the provided answer hash are the same does a point get awarded
         _correctNumber += comparators[i].out;
     }   
+
+    // Add hidden signals to make sure that tampering with salt will invalidate the snark proof
+    signal saltSquare;
+    saltSquare <== salt * salt;
 
     // Feedback on which questions were answered correctly can be managed at the frontend level, by looking at
     // the correct answer hashes 

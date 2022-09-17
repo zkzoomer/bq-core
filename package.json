@@ -7,5 +7,8 @@
     "circomlibjs": "^0.1.7",
     "ffjavascript": "^0.2.55",
     "snarkjs": "^0.4.24"
+  },
+  "devDependencies": {
+    "dotjs": "^0.2.0"
   }
 }

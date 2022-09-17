@@ -9,10 +9,11 @@ template MixedTest(k, n) {
 
     // The multiple choice part of the test requires the leaves in the answers tree and the salt
     signal input multipleChoiceAnswers[m];
-    signal input salt;
+    signal input multipleChoiceSalt;
     // The open ended part of the test requires the hashes of the answers as well as the user's answers
     signal input openAnswersHash[n];
     signal input openAnswers[n];
+    signal input openAnswersSalt;
 
     // Output signals, the test result is computed at the smart contract level
     signal output solvingHash;
@@ -21,7 +22,8 @@ template MixedTest(k, n) {
     component multipleChoicePart = VerifyMultipleChoiceAnswers(k);
     component openAnswerPart = VerifyOpenAnswers(n);
 
-    multipleChoicePart.salt <== salt;
+    multipleChoicePart.salt <== multipleChoiceSalt;
+    openAnswerPart.salt <== openAnswersSalt;
 
     for (var i = 0; i < m; i++) {
         multipleChoicePart.answers[i] <== multipleChoiceAnswers[i];
@@ -36,4 +38,4 @@ template MixedTest(k, n) {
     correctNumber <== openAnswerPart.correctNumber;
 }
 
-component main {public [salt, openAnswersHash]} = MixedTest(6, 50);
+component main {public [multipleChoiceSalt, openAnswersHash, openAnswersSalt]} = MixedTest(6, 50);
