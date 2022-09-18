@@ -35,6 +35,9 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     // Mapping from credential IDs to their (enumerable) set of receiver addresses
     mapping (uint256 => EnumerableSet.AddressSet) private _credentialReceivers;
 
+    // Mapping from credential IDs to the result they obtained
+    mapping (uint256 => uint256) private _credentialResults;
+
     // Token name
     string private _name;
 
@@ -101,12 +104,13 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     /**
      * @dev Mints a new credentials NFT corresponding to the multiple choice test defined by its `testerId`
      */
-    function giveCredentials(address receiver, uint256 testerId) external onlyOwner {
+    function giveCredentials(address receiver, uint256 testerId, uint256 results) external onlyOwner {
         require(!_receivedCredentials[receiver].contains(testerId), "Solver already gained credentials");
 
         // Mints a new credential NFT
         _receivedCredentials[receiver].add(testerId);
         _credentialReceivers[testerId].add(receiver);
+        _credentialResults[testerId] = results;
 
         // Emits a transfer event giving the credentials from the tester smart contract to the receiver
         emit Transfer(address(testerContract), receiver, testerId);
@@ -122,6 +126,13 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         require(testerContract.testerExists(testerId), "Tester does not exist");
 
         return testerContract.getTester(testerId).credentialsGained;
+    }
+
+    /**
+     * @dev Returns the credential result
+     */
+    function getResult(uint256 testerId) external view returns (uint) {
+        return _credentialResults[testerId];
     }
 
     /**

@@ -45,20 +45,26 @@ contract TestVerifier {
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
-        uint[2] calldata input
-    ) external view returns(uint256 result) {
-        require(multipleChoiceVerifier.verifyProof(a, b, c, input), "Invalid proof");
-        result = _verifyMultipleChoiceSolution(input[0], input[1], solutionHash) ? 100 : 0;
+        uint solvingHash,
+        uint salt
+    ) public view returns(uint256) {
+        require(multipleChoiceVerifier.verifyProof(a, b, c, [solvingHash, salt]), "Invalid proof");
+        require(_verifyMultipleChoiceSolution(solvingHash, salt, solutionHash), "Wrong solution");
+        // Only returns 100 if the proof is verified and the test was solved accordingly
+        return 100;
     }
 
     function getOpenAnswerResults(
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
-        uint[51] calldata input
-    ) external view returns(uint256 result) {
-        require(openAnswerVerifier.verifyProof(a, b, c, input), "Invalid proof");
-        result = input[0];
+        uint result, 
+        uint salt,
+        uint[] memory answerHashes
+    ) public view returns(uint256) {
+        require(openAnswerVerifier.verifyProof(a, b, c, result, salt, answerHashes), "Invalid proof");
+        require(result > 0, "No correct answers");
+        return result;
     }
 
     function getMixedTestResults(
@@ -66,12 +72,17 @@ contract TestVerifier {
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
-        uint[53] calldata input
-    ) external view returns(uint256 result) {
+        uint solvingHash,
+        uint multipleChoiceSalt,
+        uint result, 
+        uint openAnswersSalt,
+        uint[] memory answerHashes
+    ) public view returns(uint256) {
         // results: multiple choice test +100, +1 per open ended question for max of 50 -> can later get managed on frontend
-        require(mixedTestVerifier.verifyProof(a, b, c, input), "Invalid proof");
-        result = _verifyMultipleChoiceSolution(input[0], input[2], solutionHash) ? 100 : 0;
-        result += input[1];
+        require(mixedTestVerifier.verifyProof(a, b, c, solvingHash, result, multipleChoiceSalt, openAnswersSalt, answerHashes), "Invalid proof");
+        uint _result = result + (_verifyMultipleChoiceSolution(solvingHash, multipleChoiceSalt, solutionHash) ? 100 : 0);
+        require(_result > 0, "No correct answers"); 
+        return _result;
     }
 
 }

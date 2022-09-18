@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./Credentials.sol";
-import "./SolutionVerifier.sol";
+import "./TestVerifier.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
@@ -53,19 +53,10 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
 
     // Token symbol
     string private _symbol;
-    
-    struct MultipleChoiceTest {
-        uint256 solutionHash;
-        uint256 prize;
-        uint32 solvers;
-        uint32 timeLimit;
-        uint32 credentialLimit;
-        address requiredPass;
-        string credentialsGained;
-    }
 
-    struct OpenAnswerTest {
-        mapping(uint8 => uint256) answerHashes;
+    // TODO: tight pack it
+    struct Test {
+        uint8 testType;
         uint256 prize;
         uint32 solvers;
         uint32 timeLimit;
@@ -76,20 +67,14 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
 
     struct MixedTest {
         uint256 solutionHash;
-        mapping(uint8 => uint256) answerHashes;
-        uint256 prize;
-        uint32 solvers;
-        uint32 timeLimit;
-        uint32 credentialLimit;
-        address requiredPass;
-        string credentialsGained;
+        mapping(uint256 => uint256[]) answerHashes;
     }
 
-    // Mapping containing the information about each of the defined testers
-    mapping(uint256 => uint8) private _testTypes;
-    mapping(uint256 => MultipleChoiceTest) private _multipleChoiceTests;
-    mapping(uint256 => OpenAnswerTest) private _openAnswerTests;
-    mapping(uint256 => MixedTest) private _mixedTests;
+    // Mapping defining each tester
+    mapping(uint256 => Test) private _tests;
+    // Mapping with the necessary info for the different kinds of tests
+    mapping(uint256 => uint256) private _multipleChoiceTests;  // Solution hashes of each
+    mapping(uint256 => uint256[]) private _openAnswerTests;  // All answer hashes of each
 
     // Mapping for token URIs
     mapping (uint256 => string) private _tokenURIs;  // URL containing the multiple choice test for each tester
@@ -101,7 +86,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol`
      */
-    constructor (address _poseidonHasher) SolutionVerifier(_poseidonHasher) {
+    constructor (address _poseidonHasher) TestVerifier(_poseidonHasher) {
         _name = "Block Qualified Testers";
         _symbol = "BQT";
 
@@ -167,23 +152,16 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
         _nTesters++;
         uint256 _testerId = _nTesters;
 
+        _multipleChoiceTests[_testerId] = _solutionHash;
+
         _createTester(
             _testerId,
-            _testerURI, 
-            _timeLimit,
-            _credentialLimit,
-            _requiredPass
-        );
-
-        _testTypes[_testerId] = 0;
-        _multipleChoiceTests[_testerId] = MultipleChoiceTest(
-            _solutionHash, 
-            msg.value,
             0,
             _timeLimit,
             _credentialLimit,
             _requiredPass,
-            _credentialGained
+            _credentialGained,
+            _testerURI
         );
     }
 
@@ -195,35 +173,24 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
         address _requiredPass,
         string memory _credentialGained
     ) external payable {
-        uint8 nQuestions = _answerHashes.length;
-        require(nQuestions <= 50, "Number of questions must be < 50");
-        mapping(uint8 => uint256) _hashesMapping;
-        for (uint8 i = 0; i < nQuestions; i++) {
-            _hashesMapping[i] = _answerHashes[i];
-        }
+        require(_answerHashes.length <= 50, "Number of questions must be < 50");
 
         // Increase the number of testers available
         _nTesters++;
         uint256 _testerId = _nTesters;
 
+        _openAnswerTests[_testerId] = _answerHashes;
+
         _createTester(
             _testerId,
-            _testerURI, 
-            _timeLimit,
-            _credentialLimit,
-            _requiredPass
-        );
-        
-        _testTypes[_testerId] = 1;
-        _openAnswerTests[_testerId] = OpenAnswerTest(
-            _hashesMapping, 
-            msg.value,
-            0,
+            1,
             _timeLimit,
             _credentialLimit,
             _requiredPass,
-            _credentialGained
+            _credentialGained,
+            _testerURI
         );
+
     }
 
     function createMixedTest(
@@ -235,45 +202,37 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
         address _requiredPass,
         string memory _credentialGained
     ) external payable {
-        uint8 nQuestions = _answerHashes.length;
-        require(nQuestions <= 50, "Number of questions must be < 50");
-        mapping(uint8 => uint256) _hashesMapping;
-        for (uint8 i = 0; i < nQuestions; i++) {
-            _hashesMapping[i] = _answerHashes[i];
-        }
+        require(_answerHashes.length <= 50, "Number of questions must be < 50");
 
         // Increase the number of testers available
         _nTesters++;
         uint256 _testerId = _nTesters;
+        
+        // A mixed test is simply a combination of a multiple choice test and an open answer test
+        _multipleChoiceTests[_testerId] = _solutionHash;
+        _openAnswerTests[_testerId] = _answerHashes;
 
         _createTester(
             _testerId,
-            _testerURI, 
-            _timeLimit,
-            _credentialLimit,
-            _requiredPass
-        );
-
-        _testTypes[_testerId] = 2;
-        _mixedTests[_testerId] = MixedTest(
-            _solutionHash, 
-            _hashesMapping,
-            msg.value,
-            0,
+            2,
             _timeLimit,
             _credentialLimit,
             _requiredPass,
-            _credentialGained
+            _credentialGained,
+            _testerURI
         );
+
     }
 
     function _createTester(
         uint256 _testerId,
-        string memory _testerURI, 
+        uint8 _testType,
         uint32 _timeLimit,
         uint32 _credentialLimit,
-        address _requiredPass
-    ) internal payable {
+        address _requiredPass,
+        string memory _credentialGained,
+        string memory _testerURI
+    ) internal {
         require(_timeLimit > block.timestamp, "Time limit is in the past");
         require(_credentialLimit > 0, "Credential limit must be above zero");
         if(_requiredPass != address(0)) {
@@ -284,7 +243,15 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
         _tokenURIs[_testerId] = _testerURI;
 
         // Defining the test object for this testerId
-        _testTypes[_testerId] = _testType;
+        _tests[_testerId] = Test(
+            _testType,
+            msg.value,
+            0,
+            _timeLimit,
+            _credentialLimit,
+            _requiredPass,
+            _credentialGained
+        );
 
         // Minting this new nft
         _holderTokens[msg.sender].add(_testerId);
@@ -293,14 +260,33 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     }
     
     /**
-     * @dev Returns the struct that defines a tester
+     * @dev Returns the struct that defines a Test
      */
-    function getTester(uint256 testerId) external view returns (OnChainTester memory) {
-        require(_exists(testerId), "Tester does not exist");
-        uint8 testType = _testTypes[testerId];
-        if ( testType == 0 ) { return _multipleChoiceTests[testerId]; }
-        else if ( testType == 1 ) { return _openAnswerTests[testerId]; }
-        else if ( testType == 2 ) { return _mixedTests[testerId]; }
+    function getTester(uint256 testerId) external view returns (Test memory) {
+        require(_exists(testerId), "Test does not exist");
+        return _tests[testerId];
+    }
+
+    /**
+     * @dev Returns the solution hash that defines a multiple choice test
+     * Also used with mixed tests
+     */
+    function getMultipleChoiceTest(uint256 testerId) external view returns (uint256 solutionHash) {
+        require(_exists(testerId), "Test does not exist");
+        uint8 _testType = _tests[testerId].testType;
+        require(_testType == 0 || _testType == 2, "Test is not multiple choice or mixed");
+        return _multipleChoiceTests[testerId];
+    }
+
+    /**
+     * @dev Returns the list of solution hashes that define an open answer test
+     * Also used with mixed tests
+     */
+    function getOpenAnswerTest(uint256 testerId) external view returns (uint256[] memory answerHashes) {
+        require(_exists(testerId), "Test does not exist");
+        uint8 _testType = _tests[testerId].testType;
+        require(_testType == 1 || _testType == 2, "Test is not open answer or mixed");
+        return _openAnswerTests[testerId];
     }
 
     /**
@@ -330,12 +316,12 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
         _holderTokens[msg.sender].remove(testerId);
         _tokenOwners.remove(testerId);
 
-        bool wasSolved = _testers[testerId].solvers == 0 ? false : true;
-        uint256 prize = _testers[testerId].prize;
+        bool wasSolved = _tests[testerId].solvers == 0 ? false : true;
+        uint256 prize = _tests[testerId].prize;
 
-        // Test data still lives on chain but cannot be accessed by smart contract calls
-        /* delete _testers[testerId];
-        delete _tokenURIs[testerId]; */
+        // Some still lives on chain but cannot be accessed by smart contract calls
+        delete _tests[testerId];
+        delete _tokenURIs[testerId];
 
         // Returns the funds to the owner if the test was never solved
         if (!wasSolved) {
@@ -345,86 +331,97 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
         emit Transfer(msg.sender, address(0), testerId);
     }
 
-    function solveMultipleChoiceTest(
-        uint256 testerId, 
-        uint[2] calldata a,
-        uint[2][2] calldata b,
-        uint[2] calldata c,
-        uint[2] calldata input  // [solvingHash, salt]
-    ) external nonReentrant {
-
-    }
-
-    function solveOpenAnswerTest(
-        uint256 testerId, 
-        uint[2] calldata a,
-        uint[2][2] calldata b,
-        uint[2] calldata c
-    ) external nonReentrant {
-        
-    }
-
-    function solveMixedTest(
-        uint256 testerId, 
-        uint[2] calldata a,
-        uint[2][2] calldata b,
-        uint[2] calldata c,
-        uint[2] calldata input  // [solvingHash, salt]
-    ) external nonReentrant {
-        
-    }
-
-    function _solveTest(
-        uint256 testerId,
-        uint256 credentialLimit,
-        uint256 timeLimit,
-        address requiredPass
-    ) internal {
-        require(_exists(testerId), "Solving test that does not exist");
-        require(!usedSalts[input[1]], "Salt was already used");
-
-        OnChainTester memory _tester = _testers[testerId];
-        require(msg.sender != ownerOf(testerId), "Tester cannot be solved by owner");
-        require(_tester.credentialLimit == 0 || _tester.solvers < _tester.credentialLimit, "Maximum number of credentials reached");
-        require(block.timestamp <= _tester.timeLimit, "Time limit for this credential reached");
-        if(_tester.requiredPass != address(0)) {
-            require(RequiredPass(_tester.requiredPass).balanceOf(msg.sender) > 0, "Solver does not own the required token");
-        }
-    }
-
-
-    // TODO: failed solve reverts tx
+    /**
+     * @dev Allows users to attempt a test solution, minting a Credentials NFT if successful with their results
+     */
     function solveTester(
         uint256 testerId, 
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
-        uint[2] calldata input  // [solvingHash, salt]
+        uint[] calldata input  // 0: [solvingHash, salt], 1: [result, salt], 2: [solvingHash, result, multipleChoiceSalt, openAnswersSalt]
     ) external nonReentrant {
         require(_exists(testerId), "Solving test that does not exist");
-        require(!usedSalts[input[1]], "Salt was already used");
 
-        OnChainTester memory _tester = _testers[testerId];
+        Test memory _test = _tests[testerId];
+        uint8 testType = _test.testType;
+        uint256 results;
+        if ( testType == 0 ) {  // Multiple choice test
+
+            require(input.length == 2, "Invalid input length");
+            require(!usedSalts[input[1]], "Salt was already used");
+
+            _validateTester(testerId, _test);
+        
+            // Verify solution and get results
+            results = getMultipleChoiceResults(
+                _multipleChoiceTests[testerId],  // Solution hash
+                a, 
+                b, 
+                c, 
+                input[0],  // solvingHash
+                input[1]   // salt
+            );
+
+            usedSalts[input[1]] = true;
+            
+        } else if ( testType == 1 ) {  // Open answer test
+
+            require(input.length == 2, "Invalid input length");
+            require(!usedSalts[input[1]], "Salt was already used");
+            
+            _validateTester(testerId, _test);
+            uint[] memory answerHashes = _openAnswerTests[testerId];
+        
+            // Verify solution and get results
+            results = getOpenAnswerResults(
+                a, 
+                b, 
+                c, 
+                input[0],  // result
+                input[1],  // salt
+                answerHashes  // answerHashes
+            );
+
+            usedSalts[input[1]] = true;
+
+        } else if ( testType == 2 ) {  // Mixed test
+
+            require(input.length == 4, "Invalid input length");
+            require(!usedSalts[input[2]] && !usedSalts[input[3]], "Salt was already used");
+
+            _validateTester(testerId, _test);
+            uint[] memory answerHashes = _openAnswerTests[testerId];
+
+            // Verify solution and get results
+            results = getMixedTestResults(
+                _multipleChoiceTests[testerId],  // Solution hash
+                a, 
+                b, 
+                c, 
+                input[0],  // solvingHash
+                input[1],  // result
+                input[2],  // multipleChoiceSalt
+                input[3],  // openAnswersSalt
+                answerHashes  // answerHashes
+            );
+
+            usedSalts[input[2]] = true;
+            usedSalts[input[3]] = true;
+        }
+
+        if (_test.solvers == 0) { payable(msg.sender).transfer(_test.prize); }
+        credentialsContract.giveCredentials(msg.sender, testerId, results);
+        _tests[testerId].solvers++;
+    }
+
+    function _validateTester(uint256 testerId, Test memory _test) internal view {
         require(msg.sender != ownerOf(testerId), "Tester cannot be solved by owner");
-        require(_tester.credentialLimit == 0 || _tester.solvers < _tester.credentialLimit, "Maximum number of credentials reached");
-        require(block.timestamp <= _tester.timeLimit, "Time limit for this credential reached");
-        if(_tester.requiredPass != address(0)) {
-            require(RequiredPass(_tester.requiredPass).balanceOf(msg.sender) > 0, "Solver does not own the required token");
+        require(_test.credentialLimit == 0 || _test.solvers < _test.credentialLimit, "Maximum number of credentials reached");
+        require(block.timestamp <= _test.timeLimit, "Time limit for this credential reached");
+        if(_test.requiredPass != address(0)) {
+            require(RequiredPass(_test.requiredPass).balanceOf(msg.sender) > 0, "Solver does not own the required token");
         }
-
-        bool validSolution = verifySolution(a, b, c, input, _tester.solutionHash);
-
-        require(validSolution, "Invalid solution");
-
-        if (_tester.solvers == 0) {  // Was the first solver for this multiple choice test
-            payable(msg.sender).transfer(_tester.prize);
-        }
-
-        credentialsContract.giveCredentials(msg.sender, testerId);
-
-        _testers[testerId].solvers++;
-
-        usedSalts[input[1]] = true;
     }
 
     /**
