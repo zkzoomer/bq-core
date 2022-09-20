@@ -26,3 +26,4 @@ yarn-error.log*
 # big powersoftau files
 /circuits/proof/pot_15.ptau
 /circuits/proof/pot_16.ptau
+/circuits/dump

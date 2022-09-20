@@ -3,7 +3,7 @@ const poseidon = require("./poseidon.js");
 const poseidonMerkle = require('./poseidonMerkle.js');
 
 const len = 50
-const correctAnswers = new Array(len).fill(poseidon([0]));
+const correctAnswers = new Array(len).fill(poseidon([0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470]));
 correctAnswers[0] = poseidon(['350'])
 correctAnswers[1] = poseidon(['250'])
 

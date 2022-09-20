@@ -129,9 +129,18 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     }
 
     /**
+     * @dev Returns the original test type of the credential: 0, 1 or 2
+     */
+    function getCredentialType(uint256 testerId) external view returns (uint8) {
+        require(testerContract.testerExists(testerId), "Tester does not exist");
+
+        return testerContract.getTester(testerId).testType;
+    }
+
+    /**
      * @dev Returns the credential result
      */
-    function getResult(uint256 testerId) external view returns (uint) {
+    function getResults(uint256 testerId) external view returns (uint) {
         return _credentialResults[testerId];
     }
 

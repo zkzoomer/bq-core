@@ -81,7 +81,7 @@ contract TestVerifier {
         // results: multiple choice test +100, +1 per open ended question for max of 50 -> can later get managed on frontend
         require(mixedTestVerifier.verifyProof(a, b, c, solvingHash, result, multipleChoiceSalt, openAnswersSalt, answerHashes), "Invalid proof");
         uint _result = result + (_verifyMultipleChoiceSolution(solvingHash, multipleChoiceSalt, solutionHash) ? 100 : 0);
-        require(_result > 0, "No correct answers"); 
+        require(_result > 0, "Wrong solution and no correct answers"); 
         return _result;
     }
 

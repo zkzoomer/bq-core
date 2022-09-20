@@ -282,11 +282,17 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
      * @dev Returns the list of solution hashes that define an open answer test
      * Also used with mixed tests
      */
-    function getOpenAnswerTest(uint256 testerId) external view returns (uint256[] memory answerHashes) {
+    function getOpenAnswerTest(uint256 testerId) external view returns (uint256[50] memory answerHashes) {
         require(_exists(testerId), "Test does not exist");
         uint8 _testType = _tests[testerId].testType;
         require(_testType == 1 || _testType == 2, "Test is not open answer or mixed");
-        return _openAnswerTests[testerId];
+
+        for (uint i = 0; i < _openAnswerTests[testerId].length; i++) {
+            answerHashes[i] = _openAnswerTests[testerId][i];
+        }
+        for (uint i = _openAnswerTests[testerId].length; i < 50; i++) {
+            answerHashes[i] = 15083001670805533818279519394606955016606512029788045584851323712461001330117;  // = Poseidon(keccak256(""))
+        }
     }
 
     /**
