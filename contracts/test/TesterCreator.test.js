@@ -40,8 +40,8 @@ contract('TesterCreator', function (accounts) {
         this.token = this.testerCreator
     })
 
-    shouldBehaveLikeERC721(approveRevertMessage, transferRevertMessage, ...accounts);
+    /* shouldBehaveLikeERC721(approveRevertMessage, transferRevertMessage, ...accounts);
     shouldBehaveLikeERC721Metadata('ERC721', name, symbol, ...accounts);
-    shouldBehaveLikeERC721Enumerable('ERC721', ...accounts)
+    shouldBehaveLikeERC721Enumerable('ERC721', ...accounts) */
     shouldBehaveLikeTesterCreator(...accounts)
 })

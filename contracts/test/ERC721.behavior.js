@@ -1,5 +1,7 @@
 const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
+const poseidon = require("./utils/poseidon.js");
+const keccak256 = require('keccak256')
 const { ZERO_ADDRESS } = constants;
 
 const { shouldSupportInterfaces } = require('./SupportsInterface.behavior');
@@ -9,20 +11,43 @@ const secondTokenId = new BN('2');
 const nonExistentTokenId = new BN('10');
 
 const testerURI = 'https://exampletester.io';
-const solutionHash = '10483540708739576660440356112223782712680507694971046950485797346645134034053';
-const altSolutionHash = '376708155208532431192009293373440944809805944505313670183499188700119115952';
 const timeLimit = "4294967295";
 const credentialLimit = "4294967295";
 const requiredPass = ZERO_ADDRESS;
 const credentialsGained = 'Test verified';
 const prize = web3.utils.toWei('1', 'ether');
 
-const proofA = require("../proof/proofA.json");
-const publicA = require("../proof/publicA.json");
-const solutionA = require("../proof/solutionA.json").solution
-const proofB = require("../proof/proofB.json");
-const publicB = require("../proof/publicB.json");
-const solutionB = require("../proof/solutionB.json").solution
+// Multiple choice test
+const solutionHashA = '10483540708739576660440356112223782712680507694971046950485797346645134034053';  // All answers are A (1)
+const solutionHashB = '376708155208532431192009293373440944809805944505313670183499188700119115952';  // All answers are B (2)
+
+// Open asnwers test
+const answerHashesA = [
+    poseidon([BigInt('0x' + keccak256("sneed's").toString('hex'))]), 
+    poseidon([BigInt('0x' + keccak256('feed').toString('hex'))]),
+    poseidon([BigInt('0x' + keccak256('seed').toString('hex'))])
+]
+const answerHashesB = new Array(50).fill(
+    poseidon([BigInt('0x' + keccak256("deenz").toString('hex'))])
+);
+
+// Multiple choice tests
+const multipleProofA = require("./proof/multiple/multipleProofA.json")
+const multiplePublicA = require("./proof/multiple/multiplePublicA.json")
+const multipleProofB = require("./proof/multiple/multipleProofB.json")
+const multiplePublicB = require("./proof/multiple/multiplePublicB.json")
+
+// Open answer tests
+const openProofA = require("./proof/open/openProofA.json")
+const openPublicA = require("./proof/open/openPublicA.json")
+const openProofB = require("./proof/open/openProofB.json")
+const openPublicB = require("./proof/open/openPublicB.json")
+
+// Mixed tests
+const mixedProofA = require("./proof/mixed/mixedProofA.json")
+const mixedPublicA = require("./proof/mixed/mixedPublicA.json")
+const mixedProofB = require("./proof/mixed/mixedProofB.json")
+const mixedPublicB = require("./proof/mixed/mixedPublicB.json")
 
 function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, owner, newOwner, solver, altSolver, operator, other) {
   shouldSupportInterfaces([
@@ -30,41 +55,60 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
     'ERC721',
   ]);
 
+  const solveTester = async (testerContract, tokenId, proof, input, caller = solver) => {
+    await testerContract.solveTester(
+        tokenId,
+        [proof.pi_a[0], proof.pi_a[1]],
+        [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
+        [proof.pi_c[0], proof.pi_c[1]],
+        input,
+        { from: caller }
+    )
+  }
+
   context('with minted tokens', function () {
     beforeEach(async function () {
-      await this.testerCreator.createTester(
-        testerURI, solutionHash, timeLimit, credentialLimit, requiredPass, credentialsGained,
+      await this.testerCreator.createMultipleChoiceTest(
+        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
         { from: owner, value: prize }
       );
-      await this.testerCreator.createTester(
-        testerURI, altSolutionHash, timeLimit, credentialLimit, requiredPass, credentialsGained,
-        { from: owner, value: prize }
+      await this.testerCreator.createMultipleChoiceTest(
+          testerURI, solutionHashB, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
       );
+      await this.testerCreator.createOpenAnswerTest(
+          testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
+      )
+      await this.testerCreator.createOpenAnswerTest(
+          testerURI, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
+      )
+      await this.testerCreator.createMixedTest(
+          testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
+      )
+      await this.testerCreator.createMixedTest(
+          testerURI, solutionHashB, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
+      )
+
+      const _hashes = await this.testerCreator.getOpenAnswerTest('5')
 
       // Solving these testers
-      await this.testerCreator.solveTester(
-        firstTokenId,
-        [proofA.pi_a[0], proofA.pi_a[1]],
-        [[proofA.pi_b[0][1], proofA.pi_b[0][0]], [proofA.pi_b[1][1], proofA.pi_b[1][0]]],
-        [proofA.pi_c[0], proofA.pi_c[1]],
-        publicA,
-        { from: solver }
-      )
-      await this.testerCreator.solveTester(
-        secondTokenId,
-        [proofB.pi_a[0], proofB.pi_a[1]],
-        [[proofB.pi_b[0][1], proofB.pi_b[0][0]], [proofB.pi_b[1][1], proofB.pi_b[1][0]]],
-        [proofB.pi_c[0], proofB.pi_c[1]],
-        publicB,
-        { from: solver }
-      )
+      await solveTester(this.testerCreator, '1', multipleProofA, multiplePublicA)
+      await solveTester(this.testerCreator, '2', multipleProofB, multiplePublicB)
+      await solveTester(this.testerCreator, '3', openProofA, openPublicA)
+      await solveTester(this.testerCreator, '4', openProofB, openPublicB)
+      await solveTester(this.testerCreator, '5', mixedProofA, mixedPublicA)
+      await solveTester(this.testerCreator, '6', mixedProofB, mixedPublicB)
     });
 
     describe('balanceOf', function () {
       context('when the given address owns some tokens', function () {
         it('returns the amount of tokens owned by the given address', async function () {
-          expect(await this.testerCreator.balanceOf(owner)).to.be.bignumber.equal('2');
-          expect(await this.credentials.balanceOf(solver)).to.be.bignumber.equal('2');
+          expect(await this.testerCreator.balanceOf(owner)).to.be.bignumber.equal('6');
+          expect(await this.credentials.balanceOf(solver)).to.be.bignumber.equal('6');
         });
       });
 
@@ -179,39 +223,56 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
     'ERC721Enumerable',
   ]);
 
+  const solveTester = async (testerContract, tokenId, proof, input, caller = solver) => {
+    await testerContract.solveTester(
+        tokenId,
+        [proof.pi_a[0], proof.pi_a[1]],
+        [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
+        [proof.pi_c[0], proof.pi_c[1]],
+        input,
+        { from: caller }
+    )
+  }
+
   context('with minted tokens', function () {
     beforeEach(async function () {
-      await this.testerCreator.createTester(
-        testerURI, solutionHash, timeLimit, credentialLimit, requiredPass, credentialsGained,
+      await this.testerCreator.createMultipleChoiceTest(
+        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
         { from: owner, value: prize }
       );
-      await this.testerCreator.createTester(
-        testerURI, altSolutionHash, timeLimit, credentialLimit, requiredPass, credentialsGained,
-        { from: owner, value: prize }
+      await this.testerCreator.createMultipleChoiceTest(
+          testerURI, solutionHashB, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
       );
+      await this.testerCreator.createOpenAnswerTest(
+          testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
+      )
+      await this.testerCreator.createOpenAnswerTest(
+          testerURI, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
+      )
+      await this.testerCreator.createMixedTest(
+          testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
+      )
+      await this.testerCreator.createMixedTest(
+          testerURI, solutionHashB, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
+          { from: owner, value: prize }
+      )
 
       // Solving these testers
-      await this.testerCreator.solveTester(
-        firstTokenId,
-        [proofA.pi_a[0], proofA.pi_a[1]],
-        [[proofA.pi_b[0][1], proofA.pi_b[0][0]], [proofA.pi_b[1][1], proofA.pi_b[1][0]]],
-        [proofA.pi_c[0], proofA.pi_c[1]],
-        publicA,
-        { from: solver }
-      )
-      await this.testerCreator.solveTester(
-        secondTokenId,
-        [proofB.pi_a[0], proofB.pi_a[1]],
-        [[proofB.pi_b[0][1], proofB.pi_b[0][0]], [proofB.pi_b[1][1], proofB.pi_b[1][0]]],
-        [proofB.pi_c[0], proofB.pi_c[1]],
-        publicB,
-        { from: solver }
-      )
+      await solveTester(this.testerCreator, '1', multipleProofA, multiplePublicA)
+      await solveTester(this.testerCreator, '2', multipleProofB, multiplePublicB)
+      await solveTester(this.testerCreator, '3', openProofA, openPublicA)
+      await solveTester(this.testerCreator, '4', openProofB, openPublicB)
+      await solveTester(this.testerCreator, '5', mixedProofA, mixedPublicA)
+      await solveTester(this.testerCreator, '6', mixedProofB, mixedPublicB)
     });
 
     describe('totalSupply', function () {
       it('returns total token supply', async function () {
-        expect(await this.token.totalSupply()).to.be.bignumber.equal('2');
+        expect(await this.token.totalSupply()).to.be.bignumber.equal('6');
       });
     });
 
@@ -225,7 +286,7 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
       describe('when the index is greater than or equal to the total tokens owned by the given address', function () {
         it('reverts', async function () {
           await expectRevert(
-            this.testerCreator.tokenOfOwnerByIndex(owner, 2), 'Index out of bounds',
+            this.testerCreator.tokenOfOwnerByIndex(owner, 7), 'Index out of bounds',
           );
         });
       });
@@ -243,15 +304,16 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
     describe('tokenByIndex', function () {
       it('returns all tokens', async function () {
         const tokensListed = await Promise.all(
-          [0, 1].map(i => this.token.tokenByIndex(i)),
+          [0, 1, 2, 3, 4, 5].map(i => this.token.tokenByIndex(i)),
         );
-        expect(tokensListed.map(t => t.toNumber())).to.have.members([firstTokenId.toNumber(),
-          secondTokenId.toNumber()]);
+        expect(tokensListed.map(t => t.toNumber())).to.have.members(
+          [1,2,3,4,5,6]
+        );
       });
 
       it('reverts if index is greater than supply', async function () {
         await expectRevert(
-          this.testerCreator.tokenByIndex(2), 'Index out of bounds',
+          this.testerCreator.tokenByIndex(6), 'Index out of bounds',
         );
       });
 
@@ -276,14 +338,24 @@ function shouldBehaveLikeERC721Metadata (errorPrefix, name, symbol, owner) {
 
     describe('token URI', function () {
       beforeEach(async function () {
-        await this.testerCreator.createTester(
-          testerURI, solutionHash, timeLimit, credentialLimit, requiredPass, credentialsGained,
+        await this.testerCreator.createMultipleChoiceTest(
+          testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
           { from: owner, value: prize }
         );
+        await this.testerCreator.createOpenAnswerTest(
+            testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+            { from: owner, value: prize }
+        )
+        await this.testerCreator.createMixedTest(
+            testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+            { from: owner, value: prize }
+        )
       });
 
       it('return the given URI', async function () {
-        expect(await this.token.tokenURI(firstTokenId)).to.be.equal(testerURI);
+        expect(await this.token.tokenURI('1')).to.be.equal(testerURI);
+        expect(await this.token.tokenURI('2')).to.be.equal(testerURI);
+        expect(await this.token.tokenURI('3')).to.be.equal(testerURI);
       });
 
       it('reverts when queried for non existent token id', async function () {

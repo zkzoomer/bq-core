@@ -1,10 +1,10 @@
 const { expect } = require("chai");
 const { ethers, assert } = require("hardhat");
-const poseidon = require("./poseidon.js");
+const poseidon = require("./utils/poseidon.js");
 const { poseidonContract } =  require("circomlibjs");
 
 
-describe("Poseidon hashing contract", function () {
+/* describe("Poseidon hashing contract", function () {
     let account
     let poseidon2;
     this.timeout(100000);
@@ -39,4 +39,4 @@ describe("Poseidon hashing contract", function () {
         assert.equal(res2.toString(), solvingHash);
     })
 
-})
+}) */

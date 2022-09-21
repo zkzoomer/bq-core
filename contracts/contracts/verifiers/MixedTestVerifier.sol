@@ -331,7 +331,7 @@ contract MixedTestVerifier {
         uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
         uint256 default_hash = 15083001670805533818279519394606955016606512029788045584851323712461001330117;  // = Poseidon(keccak256(""))
         VerifyingKey memory vk = verifyingKey();
-        require(input.length + 1 == vk.IC.length,"verifier-bad-input");
+        require(input.length <= 50,"verifier-bad-input");
         // Compute the linear combination vk_x
         Pairing.G1Point memory vk_x = Pairing.G1Point(0, 0);
 
@@ -343,11 +343,10 @@ contract MixedTestVerifier {
         vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[3], multipleChoiceSalt));
         for (uint i = 0; i < input.length; i++) {
             require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
-            vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 1], input[i]));
+            vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 4], input[i]));
         }
         for (uint i = input.length; i < 50; i++) {
-            require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
-            vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 1], default_hash));
+            vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 4], default_hash));
         }
         require(openAnswersSalt < snark_scalar_field,"verifier-gte-snark-scalar-field");
         vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[54], openAnswersSalt));

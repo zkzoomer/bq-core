@@ -306,7 +306,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
      * @dev Returns the test URI, which contains inside the questions
      */
     function tokenURI(uint256 testerId) external view override returns (string memory) {
-        require(_exists(testerId), "Tester does not exist");
+        require(_exists(testerId), "Test does not exist");
         return _tokenURIs[testerId];
     }
 
@@ -315,7 +315,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
      * Deleting a test is **final**
      */
     function deleteTester(uint256 testerId) external {
-        require(_exists(testerId), "Tester does not exist");
+        require(_exists(testerId), "Test does not exist");
         require(ownerOf(testerId) == msg.sender, "Deleting tester that is not own");
 
         // Burns the token from the `msg.sender` holdings
@@ -355,6 +355,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
         if ( testType == 0 ) {  // Multiple choice test
 
             require(input.length == 2, "Invalid input length");
+            
             require(!usedSalts[input[1]], "Salt was already used");
 
             _validateTester(testerId, _test);

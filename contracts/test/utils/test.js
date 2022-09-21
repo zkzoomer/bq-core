@@ -1,4 +1,4 @@
-const keccak256 = require('keccak256')
+/* const keccak256 = require('keccak256')
 const poseidon = require("./utils/poseidon.js");
 
 
@@ -9,4 +9,4 @@ console.log([
     poseidon([BigInt('0x' + keccak256('feed').toString('hex'))]),
     poseidon([BigInt('0x' + keccak256('&').toString('hex'))]),
     poseidon([BigInt('0x' + keccak256('seed').toString('hex'))])
-])
+]) */

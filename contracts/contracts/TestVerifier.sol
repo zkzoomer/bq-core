@@ -73,8 +73,8 @@ contract TestVerifier {
         uint[2][2] calldata b,
         uint[2] calldata c,
         uint solvingHash,
-        uint multipleChoiceSalt,
-        uint result, 
+        uint result,
+        uint multipleChoiceSalt, 
         uint openAnswersSalt,
         uint[] memory answerHashes
     ) public view returns(uint256) {
