@@ -524,6 +524,7 @@ contract MixedTestVerifier {
         );                                      
         
     }
+    
     function verify(
         uint solvingHash,
         uint result,
@@ -548,11 +549,12 @@ contract MixedTestVerifier {
             require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
             vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 4], input[i]));
         }
-        vk_x = Pairing.addition(vk_x, emptyAnswersSum[uint8(50 - input.length - 1)]);
+        if (input.length < 50) {
+            vk_x = Pairing.addition(vk_x, emptyAnswersSum[uint8(50 - input.length - 1)]);
+        }
         require(openAnswersSalt < snark_scalar_field,"verifier-gte-snark-scalar-field");
         vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[54], openAnswersSalt));
         
-        /* vk_x = Pairing.addition(vk_x, vk.IC[0]); */
         if (!Pairing.pairingProd4(
             Pairing.negate(proof.A), proof.B,
             vk.alfa1, vk.beta2,
@@ -561,6 +563,7 @@ contract MixedTestVerifier {
         )) return 1;
         return 0;
     }
+
     /// @return r  bool true if proof is valid
     function verifyProof(
             uint[2] memory a,

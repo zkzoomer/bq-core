@@ -536,21 +536,12 @@ contract OpenAnswerVerifier {
             require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
             vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 2], input[i]));
         }
-        vk_x = Pairing.addition(vk_x, emptyAnswersSum[uint8(50 - input.length - 1)]);
-        /* vk_x = Pairing.addition(
-            vk_x,
-            Pairing.G1Point(
-                6481195585153972331076812052445354404313415045487442850535540706209200983935,
-                8706990099399261252512792849070172594355902269537324320934101297078560639631
-            )
-        ); */
-        /* for (uint i = input.length; i < 50; i++) {
-            vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 2], default_hash));
-        } */
+        if (input.length < 50) {
+            vk_x = Pairing.addition(vk_x, emptyAnswersSum[uint8(50 - input.length - 1)]);
+        }
         require(salt < snark_scalar_field,"verifier-gte-snark-scalar-field");
         vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[52], salt));
 
-        /* vk_x = Pairing.addition(vk_x, vk.IC[0]); */
         if (!Pairing.pairingProd4(
             Pairing.negate(proof.A), proof.B,
             vk.alfa1, vk.beta2,
@@ -558,34 +549,6 @@ contract OpenAnswerVerifier {
             proof.C, vk.delta2
         )) return 1;
         return 0;
-    }
-
-    function verifyTest() external view returns (bool r) {
-        uint[2] memory a = [3520605333384784228013010058464005616631026246164018984979663355853634817827, 1965339673848559040611335025679006562077415084995897802702034624568202944555];
-        uint[2][2] memory b = [[ 1968107549415546715132567167524273704376847436119797365918362220350671896010,  13137695091368336709955753010117647330740438111539019446625070769214843925039 ], [ 2446652334562255428617450663883215010842303525135216884233962189879149269202, 5422852368814322229945843043926155493470912101762585810866302783318858735721]];
-        uint[2] memory c = [19934434305544076944747548499634346164549558395329656503261173547951689367992, 13957107468264194791857319031821526542702341138044590073948622763181636967960];
-        uint result = 50;
-        uint salt = 110;
-        uint[] memory input = new uint[](3);
-        input[0] = 16973889000015293487966708368167707797626490545936897578277798115484565729425;
-        input[1] = 20615233611311727935788443605133564114685709374565347788401719291804090988088;
-        input[2] = 9611706360440814874710938477142903959364090817126762187910948200796891676221;
-
-        Proof memory proof;
-        proof.A = Pairing.G1Point(a[0], a[1]);
-        proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
-        proof.C = Pairing.G1Point(c[0], c[1]);
-
-        uint[] memory inputValues = new uint[](input.length);
-        for(uint i = 0; i < input.length; i++){
-            inputValues[i] = input[i];
-        }
-
-        if (verify(result, input, salt, proof) == 0) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     /// @return r  bool true if proof is valid
