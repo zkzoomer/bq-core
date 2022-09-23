@@ -353,23 +353,9 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             })
 
             context('after minting a given testerId', function () {
-                this.beforeEach(async function () {
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
-                        { from: owner, value: prize }
-                    );
-                   await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
-                        { from: owner, value: prize }
-                    )
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
-                        { from: owner, value: prize }
-                    )
-                })
 
                 it('returns the list of solution hashes for this testerId', async function () {
-                    // TODO
+                   // TODO
                 })
             })
         })
