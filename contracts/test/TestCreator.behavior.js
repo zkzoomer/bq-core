@@ -10,9 +10,9 @@ const secondTokenId = new BN('2');
 const thirdTokenId = new BN('3');
 const nonExistentTokenId = new BN('10');
 
-const testerURI = 'https://deenz.dev';
+const testURI = 'https://deenz.dev';
 const timeLimit = "4294967295";
-const credentialLimit = "4294967295";
+const credentialLimit = "16777215";
 const requiredPass = ZERO_ADDRESS;
 const credentialsGained = 'Test verified';
 const prize = web3.utils.toWei('1', 'ether');
@@ -38,14 +38,16 @@ const altMultipleProofA = require("./proof/multiple/altMultipleProofA.json")
 const altMultiplePublicA = require("./proof/multiple/altMultiplePublicA.json")
 const multipleProofB = require("./proof/multiple/multipleProofB.json")
 const multiplePublicB = require("./proof/multiple/multiplePublicB.json")
-const altMultipleProofB = require("./proof/multiple/altMultipleProofA.json")
-const altMultiplePublicB = require("./proof/multiple/altMultiplePublicA.json")
+const altMultipleProofB = require("./proof/multiple/altMultipleProofB.json")
+const altMultiplePublicB = require("./proof/multiple/altMultiplePublicB.json")
 
 // Open answer tests
 const openProofA = require("./proof/open/openProofA.json")
 const openPublicA = require("./proof/open/openPublicA.json")
 const altOpenProofA = require("./proof/open/altOpenProofA.json")
 const altOpenPublicA = require("./proof/open/altOpenPublicA.json")
+const wrongOpenProofA = require("./proof/open/wrongOpenProofA.json")
+const wrongOpenPublicA = require("./proof/open/wrongOpenPublicA.json")
 const openProofB = require("./proof/open/openProofB.json")
 const openPublicB = require("./proof/open/openPublicB.json")
 const altOpenProofB = require("./proof/open/altOpenProofB.json")
@@ -56,16 +58,18 @@ const mixedProofA = require("./proof/mixed/mixedProofA.json")
 const mixedPublicA = require("./proof/mixed/mixedPublicA.json")
 const altMixedProofA = require("./proof/mixed/altMixedProofA.json")
 const altMixedPublicA = require("./proof/mixed/altMixedPublicA.json")
+const wrongMixedProofA = require("./proof/mixed/wrongMixedProofA.json")
+const wrongMixedPublicA = require("./proof/mixed/wrongMixedPublicA.json")
 const mixedProofB = require("./proof/mixed/mixedProofB.json")
 const mixedPublicB = require("./proof/mixed/mixedPublicB.json")
 const altMixedProofB = require("./proof/mixed/altMixedProofB.json")
 const altMixedPublicB = require("./proof/mixed/altMixedPublicB.json")
 
 
-function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, operator, other) {
+function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operator, other) {
 
-    const solveTester = async (testerContract, tokenId, proof, input, caller = solver) => {
-        await testerContract.solveTester(
+    const solveTest = async (testContract, tokenId, proof, input, caller = solver) => {
+        await testContract.solveTest(
             tokenId,
             [proof.pi_a[0], proof.pi_a[1]],
             [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
@@ -76,29 +80,29 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
     }
 
     context('without created tests', function () {
-        describe('createTester', function () {
+        describe('createtest', function () {
             context('when the time limit is less than the current time', function () {
                 it('reverts', async function () {
                     const pastTime = Math.floor(Date.now() / 1000) - 10;
                     await expectRevert(
-                        this.testerCreator.createMultipleChoiceTest(
-                            testerURI, solutionHashA, pastTime, credentialLimit, requiredPass, credentialsGained,
+                        this.testCreator.createMultipleChoiceTest(
+                            credentialLimit, pastTime, requiredPass, solutionHashA, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
                         "Time limit is in the past"   
                     )
                     await expectRevert(
-                        this.testerCreator.createOpenAnswerTest(
-                            testerURI, answerHashesA, pastTime, credentialLimit, requiredPass, credentialsGained,
+                        this.testCreator.createOpenAnswerTest(
+                            credentialLimit, pastTime, requiredPass, answerHashesA, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
                         "Time limit is in the past"  
                     )
                     await expectRevert(
-                        this.testerCreator.createMixedTest(
-                            testerURI, solutionHashA, answerHashesA, pastTime, credentialLimit, requiredPass, credentialsGained,
+                        this.testCreator.createMixedTest(
+                            credentialLimit, pastTime, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -110,24 +114,24 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             context('when the credential limit is equal to zero', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.createMultipleChoiceTest(
-                            testerURI, solutionHashA, timeLimit, 0, requiredPass, credentialsGained,
+                        this.testCreator.createMultipleChoiceTest(
+                            0, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
                         "Credential limit must be above zero"   
                     )
                     await expectRevert(
-                        this.testerCreator.createOpenAnswerTest(
-                            testerURI, answerHashesA, timeLimit, 0, requiredPass, credentialsGained,
+                        this.testCreator.createOpenAnswerTest(
+                            0, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
                         "Credential limit must be above zero" 
                     )
                     await expectRevert(
-                        this.testerCreator.createMixedTest(
-                            testerURI, solutionHashA, answerHashesA, timeLimit, 0, requiredPass, credentialsGained,
+                        this.testCreator.createMixedTest(
+                            0, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -139,20 +143,20 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             context('when providing a malicious contract as the required pass', function () {
                 it('reverts', async function () {
                     await expectRevert.unspecified(
-                        this.testerCreator.createMultipleChoiceTest(
-                            testerURI, solutionHashA, timeLimit, credentialLimit, this.malicious.address, credentialsGained,
+                        this.testCreator.createMultipleChoiceTest(
+                            credentialLimit, timeLimit, this.malicious.address, solutionHashA, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                     )
                     await expectRevert.unspecified(
-                        this.testerCreator.createOpenAnswerTest(
-                            testerURI, answerHashesA, timeLimit, credentialLimit, this.malicious.address, credentialsGained,
+                        this.testCreator.createOpenAnswerTest(
+                            credentialLimit, timeLimit, this.malicious.address, answerHashesA, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                     )
                     await expectRevert.unspecified(
-                        this.testerCreator.createMixedTest(
-                            testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, this.malicious.address, credentialsGained,
+                        this.testCreator.createMixedTest(
+                            credentialLimit, timeLimit, this.malicious.address, solutionHashA, answerHashesA, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -162,18 +166,18 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             })
 
             context('when providing a valid contract as the required pass', function () {
-                it('mints a new tester', async function () {
+                it('mints a new test', async function () {
                     // tx clears
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, credentialLimit, this.valid.address, credentialsGained,
+                    await this.testCreator.createMultipleChoiceTest(
+                        credentialLimit, timeLimit, this.valid.address, solutionHashA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     );
-                    await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, timeLimit, credentialLimit, this.valid.address, credentialsGained,
+                    await this.testCreator.createOpenAnswerTest(
+                        credentialLimit, timeLimit, this.valid.address, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, this.valid.address, credentialsGained,
+                    await this.testCreator.createMixedTest(
+                        credentialLimit, timeLimit, this.valid.address, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
@@ -183,38 +187,59 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                 it('reverts', async function () {
                     const tooManyQuestions = new Array(51).fill(poseidon([BigInt('0x' + keccak256('sneed').toString('hex'))]));
                     await expectRevert(
-                        this.testerCreator.createOpenAnswerTest(
-                            testerURI, tooManyQuestions, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                        this.testCreator.createOpenAnswerTest(
+                            credentialLimit, timeLimit, requiredPass, tooManyQuestions, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
-                        "Number of questions must be < 50"
+                        "Invalid number of questions"
                     )
                     await expectRevert(
-                        this.testerCreator.createMixedTest(
-                            testerURI, solutionHashA, tooManyQuestions, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                        this.testCreator.createMixedTest(
+                            credentialLimit, timeLimit, requiredPass, solutionHashA, tooManyQuestions, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
-                        "Number of questions must be < 50"
+                        "Invalid number of questions"
                     )
                 })
             })
 
-            context('after a succesful mint (tester creation)', function () {
+            context('when providing no answer hashes', function () {
+                it('reverts', async function () {
+                    await expectRevert(
+                        this.testCreator.createOpenAnswerTest(
+                            credentialLimit, timeLimit, requiredPass, [], credentialsGained, testURI,
+                            { from: owner, value: prize }
+                        )
+                        ,
+                        "Invalid number of questions"
+                    )
+                    await expectRevert(
+                        this.testCreator.createMixedTest(
+                            credentialLimit, timeLimit, requiredPass, solutionHashA, [], credentialsGained, testURI,
+                            { from: owner, value: prize }
+                        )
+                        ,
+                        "Invalid number of questions"
+                    )
+                })
+            })
+
+            context('after a succesful mint (test creation)', function () {
                 let tx1, tx2, tx3
 
                 beforeEach(async function () {
-                    tx1 = await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    tx1 = await this.testCreator.createMultipleChoiceTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     );
-                    tx2 = await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    tx2 = await this.testCreator.createOpenAnswerTest(
+                        credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
-                    tx3 = await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    tx3 = await this.testCreator.createMixedTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
@@ -227,36 +252,36 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             })
         })
 
-        describe('testerExists', function () {
-            context('when the given testerId does not exist', function () {
+        describe('testExists', function () {
+            context('when the given testId does not exist', function () {
                 it('returns false', async function () {
-                    expect(await this.testerCreator.testerExists(nonExistentTokenId))
+                    expect(await this.testCreator.testExists(nonExistentTokenId))
                         .to.be.false
                 })
             })
 
-            context('after minting a given testerId', function () {
+            context('after minting a given testId', function () {
                 beforeEach(async function () {
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createMultipleChoiceTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     );
-                   await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                   await this.testCreator.createOpenAnswerTest(
+                        credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createMixedTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
 
                 it('returns true', async function () {
-                    expect(await this.testerCreator.testerExists(firstTokenId))
+                    expect(await this.testCreator.testExists(firstTokenId))
                         .to.be.true
-                    expect(await this.testerCreator.testerExists(secondTokenId))
+                    expect(await this.testCreator.testExists(secondTokenId))
                         .to.be.true
-                    expect(await this.testerCreator.testerExists(thirdTokenId))
+                    expect(await this.testCreator.testExists(thirdTokenId))
                         .to.be.true
                 })
             })
@@ -265,154 +290,173 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
 
     context('with created tests', function () {
         beforeEach(async function () {
-            await this.testerCreator.createMultipleChoiceTest(
-                testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+            await this.testCreator.createMultipleChoiceTest(
+                credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
                 { from: owner, value: prize }
             );
-            await this.testerCreator.createMultipleChoiceTest(
-                testerURI, solutionHashB, timeLimit, credentialLimit, requiredPass, credentialsGained,
+            await this.testCreator.createMultipleChoiceTest(
+                credentialLimit, timeLimit, requiredPass, solutionHashB, credentialsGained, testURI, 
                 { from: owner, value: prize }
             );
-            await this.testerCreator.createOpenAnswerTest(
-                testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+            await this.testCreator.createOpenAnswerTest(
+                credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
                 { from: owner, value: prize }
             )
-            await this.testerCreator.createOpenAnswerTest(
-                testerURI, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
+            await this.testCreator.createOpenAnswerTest(
+                credentialLimit, timeLimit, requiredPass, answerHashesB, credentialsGained, testURI,
                 { from: owner, value: prize }
             )
-            await this.testerCreator.createMixedTest(
-                testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+            await this.testCreator.createMixedTest(
+                credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                 { from: owner, value: prize }
             )
-            await this.testerCreator.createMixedTest(
-                testerURI, solutionHashB, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
+            await this.testCreator.createMixedTest(
+                credentialLimit, timeLimit, requiredPass, solutionHashB, answerHashesB, credentialsGained, testURI,
                 { from: owner, value: prize }
             )
         })
 
         describe('getMultipleChoiceTest', function () {
-            context('when the given testerId does not exist', function () {
+            context('when the given testId does not exist', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.getMultipleChoiceTest(nonExistentTokenId)
+                        this.testCreator.getMultipleChoiceTest(nonExistentTokenId)
                         ,
                         "Test does not exist"
                     )
                 })
             })
 
-            context('when the given testerId is not multipleChoice', function () {
+            context('when the given testId is not multipleChoice', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.getMultipleChoiceTest('3')
+                        this.testCreator.getMultipleChoiceTest('3')
                         ,
                         "Test is not multiple choice or mixed"
                     )
                 })
             })
 
-            context('after minting a given testerId', function () {
+            context('after minting a given testId', function () {
 
                 this.beforeEach(async function () {
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createMultipleChoiceTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     );
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createMixedTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
 
-                it('returns the solution hash for this testerId', async function () {
-                    // TODO
+                it('returns the solution hash for this testId', async function () {
+                    expect(await this.testCreator.getMultipleChoiceTest('7'))
+                        .to.be.bignumber.equal(solutionHashA)
+
+                    expect(await this.testCreator.getMultipleChoiceTest('8'))
+                        .to.be.bignumber.equal(solutionHashA)
                 })
             })
         })
 
         describe('getOpenAnswerTest', function () {
-            context('when the given testerId does not exist', function () {
+            context('when the given testId does not exist', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.getOpenAnswerTest(nonExistentTokenId)
+                        this.testCreator.getOpenAnswerTest(nonExistentTokenId)
                         ,
                         "Test does not exist"
                     )
                 })
             })
 
-            context('when the given testerId is not openAnswer', function () {
+            context('when the given testId is not openAnswer', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.getOpenAnswerTest('1')
+                        this.testCreator.getOpenAnswerTest('1')
                         ,
                         "Test is not open answer or mixed"
                     )
                 })
             })
 
-            context('after minting a given testerId', function () {
+            context('after minting a given testId', function () {
 
-                it('returns the list of solution hashes for this testerId', async function () {
-                   // TODO
+                this.beforeEach(async function () {
+                    await this.testCreator.createOpenAnswerTest(
+                        credentialLimit, timeLimit, requiredPass, answerHashesB, credentialsGained, testURI,
+                        { from: owner, value: prize }
+                    );
+                    await this.testCreator.createMixedTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesB, credentialsGained, testURI,
+                        { from: owner, value: prize }
+                    )
+                })
+
+                it('returns the list of solution hashes for this testId', async function () {
+                    expect((await this.testCreator.getOpenAnswerTest('7')).map(n => { return n.toString() })).
+                        to.deep.equal(answerHashesB.map(n => { return n.toString() }))
+                    
+                    expect((await this.testCreator.getOpenAnswerTest('8')).map(n => { return n.toString() })).
+                        to.deep.equal(answerHashesB.map(n => { return n.toString() }))
                 })
             })
         })
 
-        describe('getTester', function () {
-            context('when the given testerId does not exist', function () {
+        describe('getTest', function () {
+            context('when the given testId does not exist', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.getTester(nonExistentTokenId)
+                        this.testCreator.getTest(nonExistentTokenId)
                         ,
                         "Test does not exist"
                     )
                 })
             })
 
-            context('after minting a given testerId', function () {
+            context('after minting a given testId', function () {
 
-                it('returns the given on chain tester for this testerId', async function () {
-                    expect((await this.testerCreator.getTester('1')).slice(0,7).map(n => { return n.toString() }))
+                it('returns the given on chain test for this testId', async function () {
+                    expect((await this.testCreator.getTest('1')).slice(0,7).map(n => { return n.toString() }))
                         .to.deep.equal([
                             '0',
-                            prize,
                             '0',
-                            timeLimit,
                             credentialLimit,
+                            timeLimit,
                             requiredPass,
+                            prize,
                             credentialsGained
-                        ])
-                    expect((await this.testerCreator.getTester('3')).slice(0,7).map(n => { return n.toString() }))
+                    ])
+                    expect((await this.testCreator.getTest('3')).slice(0,7).map(n => { return n.toString() }))
                         .to.deep.equal([
                             '1',
-                            prize,
                             '0',
-                            timeLimit,
                             credentialLimit,
+                            timeLimit,
                             requiredPass,
+                            prize,
                             credentialsGained
-                        ])
-                    expect((await this.testerCreator.getTester('5')).slice(0,8).map(n => { return n.toString() }))
+                    ])
+                    expect((await this.testCreator.getTest('5')).slice(0,8).map(n => { return n.toString() }))
                         .to.deep.equal([
                             '2',
-                            prize,
                             '0',
-                            timeLimit,
                             credentialLimit,
+                            timeLimit,
                             requiredPass,
+                            prize,
                             credentialsGained
-                        ])
+                    ])
                 })
             })
         })
 
-        describe('deleteTester', function () {
-            context('when deleting a nonexistent tester', function () {
+        describe('invalidateTest', function () {
+            context('when deleting a nonexistent test', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.deleteTester(nonExistentTokenId, { from: owner })
+                        this.testCreator.invalidateTest(nonExistentTokenId, { from: owner })
                         ,
                         "Test does not exist"
                     )
@@ -422,103 +466,128 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             context('when deleting a token that is not own', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.deleteTester(new BN('1'), { from: newOwner })
+                        this.testCreator.invalidateTest(new BN('1'), { from: newOwner })
                         ,
-                        "Deleting tester that is not own"
+                        "Deleting test that is not own"
                     )
                     await expectRevert(
-                        this.testerCreator.deleteTester(new BN('3'), { from: newOwner })
+                        this.testCreator.invalidateTest(new BN('3'), { from: newOwner })
                         ,
-                        "Deleting tester that is not own"
+                        "Deleting test that is not own"
                     )
                     await expectRevert(
-                        this.testerCreator.deleteTester(new BN('5'), { from: newOwner })
+                        this.testCreator.invalidateTest(new BN('5'), { from: newOwner })
                         ,
-                        "Deleting tester that is not own"
+                        "Deleting test that is not own"
                     )
                 })
             })
 
-            context('with a successful deletion', function () {
+            context('with a successful invalidation', function () {
                 let tx1, tx2, tx3
+                
 
                 beforeEach(async function () {
-                    tx1 = await this.testerCreator.deleteTester(new BN('1'), { from: owner })
-                    tx2 = await this.testerCreator.deleteTester(new BN('3'), { from: owner })
-                    tx3 = await this.testerCreator.deleteTester(new BN('5'), { from: owner })
+                    tx1 = await this.testCreator.invalidateTest('1', { from: owner })
+                    tx2 = await this.testCreator.invalidateTest('3', { from: owner })
+                    tx3 = await this.testCreator.invalidateTest('5', { from: owner })
                 })
 
-                it('burns the token from the owner\'s holdings and total supply', async function () {
-                    const tokenIsBurned = async (tokenId) => {
-                        await expectRevert(
-                            this.testerCreator.ownerOf(tokenId)
-                            ,
-                            "ERC721: owner query for nonexistent token"
-                        )
-                        await expectRevert(
-                            this.testerCreator.tokenByIndex(tokenId)
-                            ,
-                            "Index out of bounds"
-                        )
-                        await expectRevert(
-                            this.testerCreator.tokenOfOwnerByIndex(owner, tokenId)
-                            ,
-                            "Index out of bounds"
-                        )
-                    }
-
-                    expect(await this.testerCreator.balanceOf(owner)).to.be.bignumber.equal('3')
-                    expect(await this.testerCreator.totalSupply()).to.be.bignumber.equal('3')  // Total supply and owner holdings are now 1
-                    // TODO : this dont work ?
-                    expect(await this.testerCreator.tokenByIndex('0')).to.be.bignumber.equal('2')  // First token is now testerId #2 
-                    expect(await this.testerCreator.tokenOfOwnerByIndex(owner, '0')).to.be.bignumber.equal('2')
-                    
-                    await tokenIsBurned('1')
-                    await tokenIsBurned('3')
-                    await tokenIsBurned('5')
+                it('reflects the invalidation in the on chain test object', async function () {
+                    expect((await this.testCreator.getTest('1')).slice(0,7).map(n => { return n.toString() }))
+                        .to.deep.equal([
+                            '200',
+                            '0',
+                            credentialLimit,
+                            timeLimit,
+                            requiredPass,
+                            prize,
+                            credentialsGained
+                        ])
+                    expect((await this.testCreator.getTest('3')).slice(0,7).map(n => { return n.toString() }))
+                        .to.deep.equal([
+                            '201',
+                            '0',
+                            credentialLimit,
+                            timeLimit,
+                            requiredPass,
+                            prize,
+                            credentialsGained
+                        ])
+                    expect((await this.testCreator.getTest('5')).slice(0,8).map(n => { return n.toString() }))
+                        .to.deep.equal([
+                            '202',
+                            '0',
+                            credentialLimit,
+                            timeLimit,
+                            requiredPass,
+                            prize,
+                            credentialsGained
+                        ])
                 })
 
-                it('deletes the URI', async function () {
+                it('does not allow the solving of tests', async function () {
                     await expectRevert(
-                        this.testerCreator.tokenURI('1')
+                        this.testCreator.solveTest(
+                            '1',
+                            [multipleProofA.pi_a[0], multipleProofA.pi_a[1]],
+                            [[multipleProofA.pi_b[0][1], multipleProofA.pi_b[0][0]], [multipleProofA.pi_b[1][1], multipleProofA.pi_b[1][0]]],
+                            [multipleProofA.pi_c[0], multipleProofA.pi_c[1]],
+                            multiplePublicA,
+                            { from: solver }
+                        )                        
                         ,
-                        "Test does not exist"
+                        "Test has been deleted and can no longer be solved"
                     )
                     await expectRevert(
-                        this.testerCreator.tokenURI('3')
+                        this.testCreator.solveTest(
+                            '3',
+                            [openProofA.pi_a[0], openProofA.pi_a[1]],
+                            [[openProofA.pi_b[0][1], openProofA.pi_b[0][0]], [openProofA.pi_b[1][1], openProofA.pi_b[1][0]]],
+                            [openProofA.pi_c[0], openProofA.pi_c[1]],
+                            openPublicA,
+                            { from: solver }
+                        )                        
                         ,
-                        "Test does not exist"
+                        "Test has been deleted and can no longer be solved"
                     )
                     await expectRevert(
-                        this.testerCreator.tokenURI('5')
+                        this.testCreator.solveTest(
+                            '5',
+                            [mixedProofA.pi_a[0], mixedProofA.pi_a[1]],
+                            [[mixedProofA.pi_b[0][1], mixedProofA.pi_b[0][0]], [mixedProofA.pi_b[1][1], mixedProofA.pi_b[1][0]]],
+                            [mixedProofA.pi_c[0], mixedProofA.pi_c[1]],
+                            mixedPublicA,
+                            { from: solver }
+                        )                        
                         ,
-                        "Test does not exist"
+                        "Test has been deleted and can no longer be solved"
+                    )
+                })
+                
+                it('cannot be reverted or invalidated again', async function () {
+                    await expectRevert(
+                        this.testCreator.invalidateTest('1', { from: owner })
+                        ,
+                        "Test was already invalidated"
+                    )
+                    await expectRevert(
+                        this.testCreator.invalidateTest('3', { from: owner })
+                        ,
+                        "Test was already invalidated"
+                    )
+                    await expectRevert(
+                        this.testCreator.invalidateTest('5', { from: owner })
+                        ,
+                        "Test was already invalidated"
                     )
                 })
 
-                it('deletes the on chain tester object', async function () {
-                    await expectRevert(
-                        this.testerCreator.getTester('1')
-                        ,
-                        "Test does not exist"
-                    )
-                    await expectRevert(
-                        this.testerCreator.getTester('3')
-                        ,
-                        "Test does not exist"
-                    )
-                    await expectRevert(
-                        this.testerCreator.getTester('5')
-                        ,
-                        "Test does not exist"
-                    )
-                })
-
-                it('sends the funds back if the tester was never solved', async function () {
+                it('sends the funds back if the test was never solved', async function () {
                     const sendsFundsBack = async (tokenId) => {
                         let startBalance = BigInt(await web3.eth.getBalance(owner))
 
-                        let txDict = await this.testerCreator.deleteTester(tokenId, { from: owner })
+                        let txDict = await this.testCreator.invalidateTest(tokenId, { from: owner })
                         let txFee = BigInt(txDict.receipt.gasUsed.toString()) * BigInt(txDict.receipt.effectiveGasPrice.toString())
 
                         let endBalance = BigInt(await web3.eth.getBalance(owner))
@@ -534,24 +603,24 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                     await sendsFundsBack('6')
                 })
                 
-                it('does not send any funds back if the tester did not include a prize', async function () {
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                it('does not send any funds back if the test did not include a prize', async function () {
+                    await this.testCreator.createMultipleChoiceTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
                         { from: owner }
                     );
-                    await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createOpenAnswerTest(
+                        credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
                         { from: owner }
                     )
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createMixedTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner }
                     )
 
                     const noFundsBack = async (tokenId) => {
                         let startBalance = BigInt(await web3.eth.getBalance(owner))
 
-                        let txDict = await this.testerCreator.deleteTester(tokenId, { from: owner })
+                        let txDict = await this.testCreator.invalidateTest(tokenId, { from: owner })
                         let txFee = BigInt(txDict.receipt.gasUsed.toString()) * BigInt(txDict.receipt.effectiveGasPrice.toString())
 
                         let endBalance = BigInt(await web3.eth.getBalance(owner))
@@ -567,13 +636,11 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                     await noFundsBack('9')
                 })
 
-                it('does not send any funds back if the tester was solved once', async function () {
-                    // TODO
-
+                it('does not send any funds back if the test was solved once', async function () {
                     const noFundsBack = async (tokenId, proof, input) => {
                         let startBalance = BigInt(await web3.eth.getBalance(owner))
 
-                        await this.testerCreator.solveTester(
+                        await this.testCreator.solveTest(
                             tokenId,
                             [proof.pi_a[0], proof.pi_a[1]],
                             [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
@@ -582,7 +649,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                             { from: solver }
                         )
 
-                        let txDict = await this.testerCreator.deleteTester(secondTokenId, { from: owner })
+                        let txDict = await this.testCreator.invalidateTest(tokenId, { from: owner })
                     
                         let txFee = BigInt(txDict.receipt.gasUsed.toString()) * BigInt(txDict.receipt.effectiveGasPrice.toString())
 
@@ -607,12 +674,12 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             })
         })
 
-        describe('solveTester', function () {
+        describe('solveTest', function () {
 
-            context('when the given testerId does not exist', function () {
+            context('when the given testId does not exist', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.solveTester(
+                        this.testCreator.solveTest(
                             nonExistentTokenId,
                             [multipleProofA.pi_a[0], multipleProofA.pi_a[1]],
                             [[multipleProofA.pi_b[0][1], multipleProofA.pi_b[0][0]], [multipleProofA.pi_b[1][1], multipleProofA.pi_b[1][0]]],
@@ -628,83 +695,83 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
 
             context('when the given salt was already used', function () {
                 beforeEach(async function () {
-                    await solveTester(this.testerCreator, '1', multipleProofA, multiplePublicA)
-                    await solveTester(this.testerCreator, '3', openProofA, openPublicA)
-                    await solveTester(this.testerCreator, '5', mixedProofA, mixedPublicA)
+                    await solveTest(this.testCreator, '1', multipleProofA, multiplePublicA)
+                    await solveTest(this.testCreator, '3', openProofA, openPublicA)
+                    await solveTest(this.testCreator, '5', mixedProofA, mixedPublicA)
                 })
 
                 it('reverts', async function () {
                     await expectRevert(
-                        solveTester(this.testerCreator, '1', multipleProofA, multiplePublicA, altSolver)
+                        solveTest(this.testCreator, '1', multipleProofA, multiplePublicA, altSolver)
                         ,
                         "Salt was already used"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '3', openProofA, openPublicA, altSolver)
+                        solveTest(this.testCreator, '3', openProofA, openPublicA, altSolver)
                         ,
                         "Salt was already used"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '5', mixedProofA, mixedPublicA, altSolver)
+                        solveTest(this.testCreator, '5', mixedProofA, mixedPublicA, altSolver)
                         ,
                         "Salt was already used"
                     )
                 })
             })
 
-            context('when the owner tries to solve the tester', function () {
+            context('when the owner tries to solve the test', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        solveTester(this.testerCreator, '1', multipleProofA, multiplePublicA, owner)
+                        solveTest(this.testCreator, '1', multipleProofA, multiplePublicA, owner)
                         ,
-                        "Tester cannot be solved by owner"
+                        "Test cannot be solved by owner"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '3', openProofA, openPublicA, owner)
+                        solveTest(this.testCreator, '3', openProofA, openPublicA, owner)
                         ,
-                        "Tester cannot be solved by owner"
+                        "Test cannot be solved by owner"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '5', mixedProofA, mixedPublicA, owner)
+                        solveTest(this.testCreator, '5', mixedProofA, mixedPublicA, owner)
                         ,
-                        "Tester cannot be solved by owner"
+                        "Test cannot be solved by owner"
                     )
                 })
             })
 
             context('when the number of credentials have been reached', function () {
                 beforeEach(async function () {
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, '1', requiredPass, credentialsGained,
+                    await this.testCreator.createMultipleChoiceTest(
+                        '1', timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     );
-                    await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, timeLimit, '1', requiredPass, credentialsGained,
+                    await this.testCreator.createOpenAnswerTest(
+                        '1', timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, '1', requiredPass, credentialsGained,
+                    await this.testCreator.createMixedTest(
+                        '1', timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
 
-                    await solveTester(this.testerCreator, '7', multipleProofA, multiplePublicA)
-                    await solveTester(this.testerCreator, '8', openProofA, openPublicA)
-                    await solveTester(this.testerCreator, '9', mixedProofA, mixedPublicA)
+                    await solveTest(this.testCreator, '7', multipleProofA, multiplePublicA)
+                    await solveTest(this.testCreator, '8', openProofA, openPublicA)
+                    await solveTest(this.testCreator, '9', mixedProofA, mixedPublicA)
                 })
                 
                 it('reverts', async function () {
                     await expectRevert(
-                        solveTester(this.testerCreator, '7', altMultipleProofA, altMultiplePublicA, altSolver)
+                        solveTest(this.testCreator, '7', altMultipleProofA, altMultiplePublicA, altSolver)
                         ,
                         "Maximum number of credentials reached"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '8', altOpenProofA, altOpenPublicA, altSolver)
+                        solveTest(this.testCreator, '8', altOpenProofA, altOpenPublicA, altSolver)
                         ,
                         "Maximum number of credentials reached"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '9', altMixedProofA, altMixedPublicA, altSolver)
+                        solveTest(this.testCreator, '9', altMixedProofA, altMixedPublicA, altSolver)
                         ,
                         "Maximum number of credentials reached"
                     )
@@ -717,40 +784,40 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                     const block = await web3.eth.getBlock(blockNum)
                     const nearTimeLimit = block['timestamp'] + 100;
                     
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, nearTimeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createMultipleChoiceTest(
+                        credentialLimit, nearTimeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     );
-                    await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, nearTimeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createOpenAnswerTest(
+                        credentialLimit, nearTimeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, nearTimeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createMixedTest(
+                        credentialLimit, nearTimeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     
                     // can solve now
-                    await solveTester(this.testerCreator, '7', multipleProofA, multiplePublicA)
-                    await solveTester(this.testerCreator, '8', openProofA, openPublicA)
-                    await solveTester(this.testerCreator, '9', mixedProofA, mixedPublicA)
+                    await solveTest(this.testCreator, '7', multipleProofA, multiplePublicA)
+                    await solveTest(this.testCreator, '8', openProofA, openPublicA)
+                    await solveTest(this.testCreator, '9', mixedProofA, mixedPublicA)
                 })
                 
                 it('reverts', async function () {
                     // but not later
                     await time.increase(time.duration.seconds(101));
                     await expectRevert(
-                        solveTester(this.testerCreator, '7', altMultipleProofA, altMultiplePublicA, altSolver)
+                        solveTest(this.testCreator, '7', altMultipleProofA, altMultiplePublicA, altSolver)
                         ,
                         "Time limit for this credential reached"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '8', altOpenProofA, altOpenPublicA, altSolver)
+                        solveTest(this.testCreator, '8', altOpenProofA, altOpenPublicA, altSolver)
                         ,
                         "Time limit for this credential reached"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '9', altMixedProofA, altMixedPublicA, altSolver)
+                        solveTest(this.testCreator, '9', altMixedProofA, altMixedPublicA, altSolver)
                         ,
                         "Time limit for this credential reached"
                     )
@@ -760,7 +827,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             context('when giving an invalid input length', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.solveTester(
+                        this.testCreator.solveTest(
                             '1',
                             [multipleProofA.pi_a[0], multipleProofA.pi_a[1]],
                             [[multipleProofA.pi_b[0][1], multipleProofA.pi_b[0][0]], [multipleProofA.pi_b[1][1], multipleProofA.pi_b[1][0]]],
@@ -772,7 +839,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                         "Invalid input length"
                     )
                     await expectRevert(
-                        this.testerCreator.solveTester(
+                        this.testCreator.solveTest(
                             '3',
                             [openProofA.pi_a[0], openProofA.pi_a[1]],
                             [[openProofA.pi_b[0][1], openProofA.pi_b[0][0]], [openProofA.pi_b[1][1], openProofA.pi_b[1][0]]],
@@ -784,7 +851,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                         "Invalid input length"
                     )
                     await expectRevert(
-                        this.testerCreator.solveTester(
+                        this.testCreator.solveTest(
                             '5',
                             [mixedProofA.pi_a[0], mixedProofA.pi_a[1]],
                             [[mixedProofA.pi_b[0][1], mixedProofA.pi_b[0][0]], [mixedProofA.pi_b[1][1], mixedProofA.pi_b[1][0]]],
@@ -801,7 +868,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             context('when giving an invalid proof', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.testerCreator.solveTester(
+                        this.testCreator.solveTest(
                             '1',
                             [multipleProofA.pi_a[0], multipleProofA.pi_a[1]],
                             [[multipleProofA.pi_b[0][0], multipleProofA.pi_b[0][1]], [multipleProofA.pi_b[1][1], multipleProofA.pi_b[1][0]]],
@@ -813,7 +880,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                         "invalid opcode"
                     )
                     await expectRevert(
-                        this.testerCreator.solveTester(
+                        this.testCreator.solveTest(
                             '3',
                             [openProofA.pi_a[0], openProofA.pi_a[1]],
                             [[openProofA.pi_b[0][0], openProofA.pi_b[0][1]], [openProofA.pi_b[1][1], openProofA.pi_b[1][0]]],
@@ -825,7 +892,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                         "invalid opcode"
                     )
                     await expectRevert(
-                        this.testerCreator.solveTester(
+                        this.testCreator.solveTest(
                             '5',
                             [mixedProofA.pi_a[0], mixedProofA.pi_a[1]],
                             [[mixedProofA.pi_b[0][0], mixedProofA.pi_b[0][1]], [mixedProofA.pi_b[1][1], mixedProofA.pi_b[1][0]]],
@@ -842,52 +909,104 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
             context('when verification is not successful', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        solveTester(this.testerCreator, '1', multipleProofB, multiplePublicB, altSolver)
+                        solveTest(this.testCreator, '1', multipleProofB, multiplePublicB, altSolver)
                         ,
                         'Wrong solution'
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '3', openProofB, openPublicB, altSolver)
+                        solveTest(this.testCreator, '3', wrongOpenProofA, wrongOpenPublicA, altSolver)
                         ,
-                        'No correct answers'
+                        "No correct answers"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '5', mixedProofB, mixedPublicB, altSolver)
+                        solveTest(this.testCreator, '5', wrongMixedProofA, wrongMixedPublicA, altSolver)
                         ,
-                        'Wrong solution and no correct answers'
+                        "Wrong solution and no correct answers"
                     )
+                })
+            })
+
+            context('after getting a credential without acing it', function () {
+                it('lets you improve the result from previous one only by providing a better solution', async function () {
+                    await solveTest(this.testCreator, '4', openProofB, openPublicB)
+                    await solveTest(this.testCreator, '6', mixedProofB, mixedPublicB)
+
+                    await solveTest(this.testCreator, '4', altOpenProofB, altOpenPublicB)
+                    await solveTest(this.testCreator, '6', altMixedProofB, altMixedPublicB)
+                })
+
+                it('does not let you change the result if given a worse one', async function () {
+                    await solveTest(this.testCreator, '4', altOpenProofB, altOpenPublicB)
+                    await solveTest(this.testCreator, '6', altMixedProofB, altMixedPublicB)
+
+                    await expectRevert(
+                        solveTest(this.testCreator, '4', openProofB, openPublicB)
+                        ,
+                        "Your existing credential has a better result"
+                    )
+
+                    await expectRevert(
+                        solveTest(this.testCreator, '6', mixedProofB, mixedPublicB)
+                        ,
+                        "Your existing credential has a better result"
+                    )
+                })
+
+                it('does not increase the number of solvers', async function () {
+                    await solveTest(this.testCreator, '4', openProofB, openPublicB)
+                    await solveTest(this.testCreator, '6', mixedProofB, mixedPublicB)
+
+                    await solveTest(this.testCreator, '4', altOpenProofB, altOpenPublicB)
+                    await solveTest(this.testCreator, '6', altMixedProofB, altMixedPublicB)
+
+                    expect((await this.testCreator.getTest('4')).solvers)
+                        .to.be.bignumber.equal('1')
+
+                    expect((await this.testCreator.getTest('6')).solvers)
+                        .to.be.bignumber.equal('1')
+                })
+
+                it('does not mint new credential NFTs', async function () {
+                    await solveTest(this.testCreator, '4', openProofB, openPublicB)
+                    await solveTest(this.testCreator, '6', mixedProofB, mixedPublicB)
+
+                    await solveTest(this.testCreator, '4', altOpenProofB, altOpenPublicB)
+                    await solveTest(this.testCreator, '6', altMixedProofB, altMixedPublicB)
+
+                    expect(await this.credentials.balanceOf(solver))
+                        .to.be.bignumber.equal('2')
                 })
             })
 
             context('when the caller does not own the required pass', function () {
                 beforeEach(async function () {
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, credentialLimit, this.valid.address, credentialsGained,
+                    await this.testCreator.createMultipleChoiceTest(
+                        credentialLimit, timeLimit, this.valid.address, solutionHashA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     );
-                    await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, timeLimit, credentialLimit, this.valid.address, credentialsGained,
+                    await this.testCreator.createOpenAnswerTest(
+                        credentialLimit, timeLimit, this.valid.address, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, this.valid.address, credentialsGained,
+                    await this.testCreator.createMixedTest(
+                        credentialLimit, timeLimit, this.valid.address, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
 
                 it('reverts', async function () {
                     await expectRevert(
-                        solveTester(this.testerCreator, '7', multipleProofA, multiplePublicA)
+                        solveTest(this.testCreator, '7', multipleProofA, multiplePublicA)
                         ,
                         "Solver does not own the required token"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '8', openProofA, openPublicA)
+                        solveTest(this.testCreator, '8', openProofA, openPublicA)
                         ,
                         "Solver does not own the required token"
                     )
                     await expectRevert(
-                        solveTester(this.testerCreator, '9', mixedProofA, mixedPublicA)
+                        solveTest(this.testCreator, '9', mixedProofA, mixedPublicA)
                         ,
                         "Solver does not own the required token"
                     )
@@ -896,27 +1015,27 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
 
             context('when the caller owns the required pass', function () {
                 beforeEach(async function () {
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, credentialLimit, this.valid.address, credentialsGained,
+                    await this.testCreator.createMultipleChoiceTest(
+                        credentialLimit, timeLimit, this.valid.address, solutionHashA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     );
-                    await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, timeLimit, credentialLimit, this.valid.address, credentialsGained,
+                    await this.testCreator.createOpenAnswerTest(
+                        credentialLimit, timeLimit, this.valid.address, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, this.valid.address, credentialsGained,
+                    await this.testCreator.createMixedTest(
+                        credentialLimit, timeLimit, this.valid.address, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
 
                     await this.valid.mint(solver, firstTokenId)
                 })
 
-                it('solves the tester', async function () {
+                it('solves the test', async function () {
                     // solving tx clears
-                    await solveTester(this.testerCreator, '1', multipleProofA, multiplePublicA)
-                    await solveTester(this.testerCreator, '3', openProofA, openPublicA)
-                    await solveTester(this.testerCreator, '5', mixedProofA, mixedPublicA)
+                    await solveTest(this.testCreator, '1', multipleProofA, multiplePublicA)
+                    await solveTest(this.testCreator, '3', openProofA, openPublicA)
+                    await solveTest(this.testCreator, '5', mixedProofA, mixedPublicA)
                 })
             })
 
@@ -924,7 +1043,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                 let tx1, tx2, tx3
 
                 beforeEach(async function () {
-                    tx1 = await this.testerCreator.solveTester(
+                    tx1 = await this.testCreator.solveTest(
                         '1',
                         [multipleProofA.pi_a[0], multipleProofA.pi_a[1]],
                         [[multipleProofA.pi_b[0][1], multipleProofA.pi_b[0][0]], [multipleProofA.pi_b[1][1], multipleProofA.pi_b[1][0]]],
@@ -932,7 +1051,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                         multiplePublicA,
                         { from: solver }
                     )
-                    tx2 = await this.testerCreator.solveTester(
+                    tx2 = await this.testCreator.solveTest(
                         '3',
                         [openProofA.pi_a[0], openProofA.pi_a[1]],
                         [[openProofA.pi_b[0][1], openProofA.pi_b[0][0]], [openProofA.pi_b[1][1], openProofA.pi_b[1][0]]],
@@ -940,7 +1059,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                         openPublicA,
                         { from: solver }
                     )
-                    tx3 = await this.testerCreator.solveTester(
+                    tx3 = await this.testCreator.solveTest(
                         '5',
                         [mixedProofA.pi_a[0], mixedProofA.pi_a[1]],
                         [[mixedProofA.pi_b[0][1], mixedProofA.pi_b[0][0]], [mixedProofA.pi_b[1][1], mixedProofA.pi_b[1][0]]],
@@ -950,35 +1069,35 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                     )
                 })
 
-                it('updates the on chain tester object', async function () {
-                    expect((await this.testerCreator.getTester('1')).slice(0,7).map(n => { return n.toString() }))
+                it('updates the on chain test object', async function () {
+                    expect((await this.testCreator.getTest('1')).slice(0,7).map(n => { return n.toString() }))
                         .to.deep.equal([
                             '0',
-                            prize,
                             '1',
-                            timeLimit,
                             credentialLimit,
+                            timeLimit,
                             requiredPass,
+                            prize,
                             credentialsGained
                         ])
-                    expect((await this.testerCreator.getTester('3')).slice(0,7).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('3')).slice(0,7).map(n => { return n.toString() }))
                         .to.deep.equal([
                             '1',
-                            prize,
                             '1',
-                            timeLimit,
                             credentialLimit,
+                            timeLimit,
                             requiredPass,
+                            prize,
                             credentialsGained
                         ])
-                    expect((await this.testerCreator.getTester('5')).slice(0,8).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('5')).slice(0,8).map(n => { return n.toString() }))
                         .to.deep.equal([
                             '2',
-                            prize,
                             '1',
-                            timeLimit,
                             credentialLimit,
+                            timeLimit,
                             requiredPass,
+                            prize,
                             credentialsGained
                         ])
                 })
@@ -989,7 +1108,7 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                         let startBalance = BigInt(await web3.eth.getBalance(solver))
 
                         // First solver
-                        let txDict = await this.testerCreator.solveTester(
+                        let txDict = await this.testCreator.solveTest(
                             tokenId,
                             [proof.pi_a[0], proof.pi_a[1]],
                             [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
@@ -1006,9 +1125,10 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                         const expectedGain = BigInt(prize) - txFee
 
                         expect(balanceGain).to.be.equal(expectedGain)
-
+                        
                         // Second solver
-                        let altTxDict = await this.testerCreator.solveTester(
+                        let altStartBalance = BigInt(await web3.eth.getBalance(altSolver))
+                        let altTxDict = await this.testCreator.solveTest(
                             tokenId,
                             [altProof.pi_a[0], altProof.pi_a[1]],
                             [[altProof.pi_b[0][1], altProof.pi_b[0][0]], [altProof.pi_b[1][1], altProof.pi_b[1][0]]],
@@ -1035,23 +1155,23 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
 
                 it('does not pay the solver if no prize was specified', async function () {
 
-                    await this.testerCreator.createMultipleChoiceTest(
-                        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createMultipleChoiceTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
                         { from: owner }
                     );
-                    await this.testerCreator.createOpenAnswerTest(
-                        testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createOpenAnswerTest(
+                        credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
                         { from: owner }
                     )
-                    await this.testerCreator.createMixedTest(
-                        testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+                    await this.testCreator.createMixedTest(
+                        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
                         { from: owner }
                     )
 
                     const noPayback = async (tokenId, proof, public) => {
                         let startBalance = BigInt(await web3.eth.getBalance(altSolver))
                         
-                        let txDict = await this.testerCreator.solveTester(
+                        let txDict = await this.testCreator.solveTest(
                             tokenId,
                             [proof.pi_a[0], proof.pi_a[1]],
                             [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
@@ -1080,27 +1200,27 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
                 })
 
                 it('emits a transfer event for the credential', async function () {
-                    expectEvent(tx1, 'Transfer', { from: this.testerCreator.address, to: solver, tokenId: '1' })
-                    expectEvent(tx2, 'Transfer', { from: this.testerCreator.address, to: solver, tokenId: '3' })
-                    expectEvent(tx3, 'Transfer', { from: this.testerCreator.address, to: solver, tokenId: '5' })
+                    expectEvent(tx1, 'Transfer', { from: this.testCreator.address, to: solver, tokenId: '1' })
+                    expectEvent(tx2, 'Transfer', { from: this.testCreator.address, to: solver, tokenId: '3' })
+                    expectEvent(tx3, 'Transfer', { from: this.testCreator.address, to: solver, tokenId: '5' })
                 })
 
                 context('when solver already gained credentials', function () {
                     it('reverts', async function () {
                         await expectRevert(
-                            solveTester(this.testerCreator, '1', altMultipleProofA, altMultiplePublicA)
+                            solveTest(this.testCreator, '1', altMultipleProofA, altMultiplePublicA)
                             ,
-                            "Solver already gained credentials"
+                            'Your existing credential has a better result'
                         )
                         await expectRevert(
-                            solveTester(this.testerCreator, '3', altOpenProofA, altOpenPublicA)
+                            solveTest(this.testCreator, '3', altOpenProofA, altOpenPublicA)
                             ,
-                            "Solver already gained credentials"
+                            'Your existing credential has a better result'
                         )
                         await expectRevert(
-                            solveTester(this.testerCreator, '5', altMixedProofA, altMixedPublicA)
+                            solveTest(this.testCreator, '5', altMixedProofA, altMixedPublicA)
                             ,
-                            "Solver already gained credentials"
+                            'Your existing credential has a better result'
                         )
                     })
                 })
@@ -1110,5 +1230,5 @@ function shouldBehaveLikeTesterCreator(owner, newOwner, solver, altSolver, opera
 }
 
 module.exports = {
-    shouldBehaveLikeTesterCreator
+    shouldBehaveLiketestCreator
 };

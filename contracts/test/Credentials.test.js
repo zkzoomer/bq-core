@@ -5,9 +5,9 @@ const {
     shouldBehaveLikeERC721Metadata,
     shouldBehaveLikeERC721Enumerable,
 } = require('./ERC721.behavior');
-const { shouldBehaveLikeCredentials } = require('./Credentials.behavior')
+const { shouldBehaveLikeCredentials } = require('./credentials.behavior')
 
-const TesterCreator = artifacts.require('TesterCreator')
+const testCreator = artifacts.require('TestCreator')
 const Credentials = artifacts.require('Credentials')
 let poseidon
 
@@ -27,16 +27,16 @@ contract('Credentials', function (accounts) {
         )
 
         poseidon = await P2.deploy()
-        this.testerCreator = await TesterCreator.new(poseidon.address)
-        const _credentials = await this.testerCreator.credentialsContract()
+        this.testCreator = await testCreator.new(poseidon.address)
+        const _credentials = await this.testCreator.credentialsContract()
         /* this.credentials = (new ethers.Contract(_credentials, credentialsAbi)).deployed() */
         this.credentials = await Credentials.at(_credentials)
 
         this.token = this.credentials
     })
 
-    /* shouldBehaveLikeERC721(approveRevertMessage, transferRevertMessage, ...accounts);
+    shouldBehaveLikeERC721(approveRevertMessage, transferRevertMessage, ...accounts);
     shouldBehaveLikeERC721Metadata('ERC721', name, symbol, ...accounts);
-    shouldBehaveLikeERC721Enumerable('ERC721', ...accounts) */
+    shouldBehaveLikeERC721Enumerable('ERC721', ...accounts)
     shouldBehaveLikeCredentials(...accounts)
 })

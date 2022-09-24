@@ -9,9 +9,9 @@ const secondTokenId = new BN('2');
 const thirdTokenId = new BN('3');
 const nonExistentTokenId = new BN('10');
 
-const testerURI = 'https://deenz.dev';
+const testURI = 'https://deenz.dev';
 const timeLimit = "4294967295";
-const credentialLimit = "4294967295";
+const credentialLimit = "16777215";
 const requiredPass = ZERO_ADDRESS;
 const credentialsGainedA = 'Multiple verified';
 const credentialsGainedB = 'Open verified';
@@ -49,6 +49,8 @@ const altOpenProofA = require("./proof/open/altOpenProofA.json")
 const altOpenPublicA = require("./proof/open/altOpenPublicA.json")
 const openProofB = require("./proof/open/openProofB.json")
 const openPublicB = require("./proof/open/openPublicB.json")
+const altOpenProofB = require("./proof/open/altOpenProofB.json")
+const altOpenPublicB = require("./proof/open/altOpenPublicB.json")
 
 // Mixed tests
 const mixedProofA = require("./proof/mixed/mixedProofA.json")
@@ -57,25 +59,27 @@ const altMixedProofA = require("./proof/mixed/altMixedProofA.json")
 const altMixedPublicA = require("./proof/mixed/altMixedPublicA.json")
 const mixedProofB = require("./proof/mixed/mixedProofB.json")
 const mixedPublicB = require("./proof/mixed/mixedPublicB.json")
+const altMixedProofB = require("./proof/mixed/altMixedProofB.json")
+const altMixedPublicB = require("./proof/mixed/altMixedPublicB.json")
 
 function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operator, other) {
-    context('with solved testers', function () {
+    context('with solved tests', function () {
         beforeEach(async function () {
-            await this.testerCreator.createMultipleChoiceTest(
-                testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGainedA,
+            await this.testCreator.createMultipleChoiceTest(
+                credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGainedA, testURI,
                 { from: owner, value: prize }
             );
-            await this.testerCreator.createOpenAnswerTest(
-                testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGainedB,
+            await this.testCreator.createOpenAnswerTest(
+                credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGainedB, testURI,
                 { from: owner, value: prize }
             )
-            await this.testerCreator.createMixedTest(
-                testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGainedC,
+            await this.testCreator.createMixedTest(
+                credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGainedC, testURI,
                 { from: owner, value: prize }
             )
         
-            // Solving these testers
-            await this.testerCreator.solveTester(
+            // Solving these tests
+            await this.testCreator.solveTest(
                 '1',
                 [multipleProofA.pi_a[0], multipleProofA.pi_a[1]],
                 [[multipleProofA.pi_b[0][1], multipleProofA.pi_b[0][0]], [multipleProofA.pi_b[1][1], multipleProofA.pi_b[1][0]]],
@@ -83,7 +87,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                 multiplePublicA,
                 { from: solver }
             )
-            await this.testerCreator.solveTester(
+            await this.testCreator.solveTest(
                 '2',
                 [openProofA.pi_a[0], openProofA.pi_a[1]],
                 [[openProofA.pi_b[0][1], openProofA.pi_b[0][0]], [openProofA.pi_b[1][1], openProofA.pi_b[1][0]]],
@@ -91,7 +95,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                 openPublicA,
                 { from: solver }
             )
-            await this.testerCreator.solveTester(
+            await this.testCreator.solveTest(
                 '3',
                 [mixedProofA.pi_a[0], mixedProofA.pi_a[1]],
                 [[mixedProofA.pi_b[0][1], mixedProofA.pi_b[0][0]], [mixedProofA.pi_b[1][1], mixedProofA.pi_b[1][0]]],
@@ -102,11 +106,11 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
         })
 
         describe('totalSupply', function () {
-            it('increases with other users solving the tester', async function () {
+            it('increases with other users solving the test', async function () {
                 expect(await this.credentials.totalSupply())
                     .to.be.bignumber.equal('3')
 
-                await this.testerCreator.solveTester(
+                await this.testCreator.solveTest(
                     '1',
                     [altMultipleProofA.pi_a[0], altMultipleProofA.pi_a[1]],
                     [[altMultipleProofA.pi_b[0][1], altMultipleProofA.pi_b[0][0]], [altMultipleProofA.pi_b[1][1], altMultipleProofA.pi_b[1][0]]],
@@ -129,7 +133,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
 
             context('when the credentials have been granted', function () {
                 it('returns a list of the addresses that got a credential', async function () {
-                    await this.testerCreator.solveTester(
+                    await this.testCreator.solveTest(
                         '1',
                         [altMultipleProofA.pi_a[0], altMultipleProofA.pi_a[1]],
                         [[altMultipleProofA.pi_b[0][1], altMultipleProofA.pi_b[0][0]], [altMultipleProofA.pi_b[1][1], altMultipleProofA.pi_b[1][0]]],
@@ -160,17 +164,17 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
         })
 
         describe('getCredential', function () {
-            context('when given a nonexistent tester', function () {
+            context('when given a nonexistent test', function () {
                 it('reverts', async function () {
                     await expectRevert(
                         this.credentials.getCredential(nonExistentTokenId)
                         ,
-                        "Tester does not exist"
+                        "test does not exist"
                     )
                 })
             })
 
-            context('when given a valid tester', function () {
+            context('when given a valid test', function () {
                 it('returns the defined credential', async function () {
                     expect(await this.credentials.getCredential('1'))
                         .to.be.equal(credentialsGainedA)
@@ -184,16 +188,16 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
 
         describe('getCredentialType', function () {
             beforeEach(async function () {
-                await this.testerCreator.createMultipleChoiceTest(
-                    testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGainedA,
+                await this.testCreator.createMultipleChoiceTest(
+                    credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGainedA, testURI,
                     { from: owner, value: prize }
                 );
-               await this.testerCreator.createOpenAnswerTest(
-                    testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGainedB,
+                await this.testCreator.createOpenAnswerTest(
+                    credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGainedB, testURI,
                     { from: owner, value: prize }
                 )
-                await this.testerCreator.createMixedTest(
-                    testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGainedC,
+                await this.testCreator.createMixedTest(
+                    credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGainedC, testURI,
                     { from: owner, value: prize }
                 )
             })
@@ -222,31 +226,31 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
     
         describe('getResults', function () {
             beforeEach(async function () {
-                await this.testerCreator.createMultipleChoiceTest(
-                    testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGainedA,
+                await this.testCreator.createMultipleChoiceTest(
+                    credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGainedA, testURI,
                     { from: owner, value: prize }
                 );
-                await this.testerCreator.createOpenAnswerTest(
-                    testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGainedB,
+                await this.testCreator.createOpenAnswerTest(
+                    credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGainedB, testURI,
                     { from: owner, value: prize }
                 )
-                await this.testerCreator.createMixedTest(
-                    testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGainedC,
+                await this.testCreator.createMixedTest(
+                    credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGainedC, testURI,
                     { from: owner, value: prize }
                 )
-                await this.testerCreator.createOpenAnswerTest(
-                    testerURI, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGainedB,
+                await this.testCreator.createOpenAnswerTest(
+                    credentialLimit, timeLimit, requiredPass, answerHashesB, credentialsGainedB, testURI,
                     { from: owner, value: prize }
                 )
-                await this.testerCreator.createMixedTest(
-                    testerURI, solutionHashA, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGainedC,
+                await this.testCreator.createMixedTest(
+                    credentialLimit, timeLimit, requiredPass, solutionHashB, answerHashesB, credentialsGainedC, testURI,
                     { from: owner, value: prize }
                 )
             })
 
             context('when a multiple choice credential is gained', function () {
                 it('returns 100', async function () {
-                    await this.testerCreator.solveTester(
+                    await this.testCreator.solveTest(
                         '4',
                         [altMultipleProofA.pi_a[0], altMultipleProofA.pi_a[1]],
                         [[altMultipleProofA.pi_b[0][1], altMultipleProofA.pi_b[0][0]], [altMultipleProofA.pi_b[1][1], altMultipleProofA.pi_b[1][0]]],
@@ -254,7 +258,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                         altMultiplePublicA,
                         { from: solver }
                     )
-                    expect(await this.credentials.getResults('1'))
+                    expect(await this.credentials.getResults(solver, '4'))
                         .to.be.bignumber.equal('100')
                 })
             })
@@ -262,7 +266,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
             context('when an open answer credential is gained', function () {
                 it('returns the number of correct answers that were given', async function () {
                     // Aced test
-                    await this.testerCreator.solveTester(
+                    await this.testCreator.solveTest(
                         '5',
                         [altOpenProofA.pi_a[0], altOpenProofA.pi_a[1]],
                         [[altOpenProofA.pi_b[0][1], altOpenProofA.pi_b[0][0]], [altOpenProofA.pi_b[1][1], altOpenProofA.pi_b[1][0]]],
@@ -270,11 +274,11 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                         altOpenPublicA,
                         { from: solver }
                     )
-                    expect(await this.credentials.getResults('2'))
+                    expect(await this.credentials.getResults(solver, '5'))
                         .to.be.bignumber.equal('50')
 
                     // Did not ace the test
-                    await this.testerCreator.solveTester(
+                    await this.testCreator.solveTest(
                         '7',
                         [openProofB.pi_a[0], openProofB.pi_a[1]],
                         [[openProofB.pi_b[0][1], openProofB.pi_b[0][0]], [openProofB.pi_b[1][1], openProofB.pi_b[1][0]]],
@@ -282,15 +286,39 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                         openPublicB,
                         { from: altSolver }
                     )
-                    expect(await this.credentials.getResults('7'))
+                    expect(await this.credentials.getResults(altSolver, '7'))
                         .to.be.bignumber.equal('48')
+                })
+
+                it('reflects the improvement in the credential', async function () {
+                    await this.testCreator.solveTest(
+                        '7',
+                        [openProofB.pi_a[0], openProofB.pi_a[1]],
+                        [[openProofB.pi_b[0][1], openProofB.pi_b[0][0]], [openProofB.pi_b[1][1], openProofB.pi_b[1][0]]],
+                        [openProofB.pi_c[0], openProofB.pi_c[1]],
+                        openPublicB,
+                        { from: altSolver }
+                    )
+                    expect(await this.credentials.getResults(altSolver, '7'))
+                        .to.be.bignumber.equal('48')
+
+                    await this.testCreator.solveTest(
+                        '7',
+                        [altOpenProofB.pi_a[0], altOpenProofB.pi_a[1]],
+                        [[altOpenProofB.pi_b[0][1], altOpenProofB.pi_b[0][0]], [altOpenProofB.pi_b[1][1], altOpenProofB.pi_b[1][0]]],
+                        [altOpenProofB.pi_c[0], altOpenProofB.pi_c[1]],
+                        altOpenPublicB,
+                        { from: altSolver }
+                    )
+                    expect(await this.credentials.getResults(altSolver, '7'))
+                        .to.be.bignumber.equal('50')
                 })
             })
     
             context('when a mixed test credential is gained', function () {
-                it('returns 100 + the number of correct answers that were given'), async function () {
+                it('returns 100 + the number of correct answers that were given', async function () {
                     // Aced test
-                    await this.testerCreator.solveTester(
+                    await this.testCreator.solveTest(
                         '6',
                         [altMixedProofA.pi_a[0], altMixedProofA.pi_a[1]],
                         [[altMixedProofA.pi_b[0][1], altMixedProofA.pi_b[0][0]], [altMixedProofA.pi_b[1][1], altMixedProofA.pi_b[1][0]]],
@@ -298,11 +326,11 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                         altMixedPublicA,
                         { from: solver }
                     )
-                    expect(await this.credentials.getResults('2'))
-                        .to.be.equal('150')
+                    expect(await this.credentials.getResults(solver, '6'))
+                        .to.be.bignumber.equal('150')
 
                     // Did not ace the test
-                    await this.testerCreator.solveTester(
+                    await this.testCreator.solveTest(
                         '8',
                         [mixedProofB.pi_a[0], mixedProofB.pi_a[1]],
                         [[mixedProofB.pi_b[0][1], mixedProofB.pi_b[0][0]], [mixedProofB.pi_b[1][1], mixedProofB.pi_b[1][0]]],
@@ -310,32 +338,56 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                         mixedPublicB,
                         { from: altSolver }
                     )
-                    expect(await this.credentials.getResults('4'))
-                        .to.be.equal('148')
-                }
+                    expect(await this.credentials.getResults(altSolver, '8'))
+                        .to.be.bignumber.equal('148')
+                })
+
+                it('reflects the improvement in the credential', async function () {
+                    await this.testCreator.solveTest(
+                        '8',
+                        [mixedProofB.pi_a[0], mixedProofB.pi_a[1]],
+                        [[mixedProofB.pi_b[0][1], mixedProofB.pi_b[0][0]], [mixedProofB.pi_b[1][1], mixedProofB.pi_b[1][0]]],
+                        [mixedProofB.pi_c[0], mixedProofB.pi_c[1]],
+                        mixedPublicB,
+                        { from: altSolver }
+                    )
+                    expect(await this.credentials.getResults(altSolver, '8'))
+                        .to.be.bignumber.equal('148')
+
+                    await this.testCreator.solveTest(
+                        '8',
+                        [altMixedProofB.pi_a[0], altMixedProofB.pi_a[1]],
+                        [[altMixedProofB.pi_b[0][1], altMixedProofB.pi_b[0][0]], [altMixedProofB.pi_b[1][1], altMixedProofB.pi_b[1][0]]],
+                        [altMixedProofB.pi_c[0], altMixedProofB.pi_c[1]],
+                        altMixedPublicB,
+                        { from: altSolver }
+                    )
+                    expect(await this.credentials.getResults(altSolver, '8'))
+                        .to.be.bignumber.equal('150')
+                })
             })
         })
     })
 
     
 
-    context('with deleted testers', function () {
+    context('with invalidated tests', function () {
         beforeEach(async function () {
-            await this.testerCreator.createMultipleChoiceTest(
-                testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGainedA,
+            await this.testCreator.createMultipleChoiceTest(
+                credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGainedA, testURI,
                 { from: owner, value: prize }
             );
-            await this.testerCreator.createOpenAnswerTest(
-                testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGainedB,
+            await this.testCreator.createOpenAnswerTest(
+                credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGainedB, testURI,
                 { from: owner, value: prize }
             )
-            await this.testerCreator.createMixedTest(
-                testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGainedC,
+            await this.testCreator.createMixedTest(
+                credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGainedC, testURI,
                 { from: owner, value: prize }
             )
         
-            // Solving these testers
-            await this.testerCreator.solveTester(
+            // Solving these tests
+            await this.testCreator.solveTest(
                 '1',
                 [multipleProofA.pi_a[0], multipleProofA.pi_a[1]],
                 [[multipleProofA.pi_b[0][1], multipleProofA.pi_b[0][0]], [multipleProofA.pi_b[1][1], multipleProofA.pi_b[1][0]]],
@@ -343,7 +395,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                 multiplePublicA,
                 { from: solver }
             )
-            await this.testerCreator.solveTester(
+            await this.testCreator.solveTest(
                 '1',
                 [altMultipleProofA.pi_a[0], altMultipleProofA.pi_a[1]],
                 [[altMultipleProofA.pi_b[0][1], altMultipleProofA.pi_b[0][0]], [altMultipleProofA.pi_b[1][1], altMultipleProofA.pi_b[1][0]]],
@@ -351,7 +403,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                 altMultiplePublicA,
                 { from: altSolver }
             )
-            await this.testerCreator.solveTester(
+            await this.testCreator.solveTest(
                 '2',
                 [openProofA.pi_a[0], openProofA.pi_a[1]],
                 [[openProofA.pi_b[0][1], openProofA.pi_b[0][0]], [openProofA.pi_b[1][1], openProofA.pi_b[1][0]]],
@@ -359,7 +411,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                 openPublicA,
                 { from: solver }
             )
-            await this.testerCreator.solveTester(
+            await this.testCreator.solveTest(
                 '3',
                 [mixedProofA.pi_a[0], mixedProofA.pi_a[1]],
                 [[mixedProofA.pi_b[0][1], mixedProofA.pi_b[0][0]], [mixedProofA.pi_b[1][1], mixedProofA.pi_b[1][0]]],
@@ -368,13 +420,13 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                 { from: altSolver }
             )
 
-            this.testerCreator.deleteTester(firstTokenId, { from: owner })
+            this.testCreator.invalidateTest(firstTokenId, { from: owner })
         })
 
         describe('totalSupply', function () {
             it('returns the number of valid credentials that were given', async function () {
                 expect(await this.credentials.totalSupply())
-                    .to.be.bignumber.equal('2')
+                    .to.be.bignumber.equal('4')
             })
         })
 
@@ -398,7 +450,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                     await expectRevert(
                         this.credentials.getCredential(firstTokenId)
                         ,
-                        "Tester does not exist"
+                        "test does not exist"
                     )
                 })
             })

@@ -535,7 +535,7 @@ contract MixedTestVerifier {
     ) internal view returns (uint) {
         uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
         VerifyingKey memory vk = verifyingKey();
-        require(input.length <= 50,"verifier-bad-input");
+        require(input.length > 0 && input.length <= 50, "verifier-bad-input");
         // Compute the linear combination vk_x
         Pairing.G1Point memory vk_x = vk.IC[0];
 

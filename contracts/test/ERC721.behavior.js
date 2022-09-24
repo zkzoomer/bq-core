@@ -10,9 +10,9 @@ const firstTokenId = new BN('1');
 const secondTokenId = new BN('2');
 const nonExistentTokenId = new BN('10');
 
-const testerURI = 'https://exampletester.io';
+const testURI = 'https://exampletest.io';
 const timeLimit = "4294967295";
-const credentialLimit = "4294967295";
+const credentialLimit = "16777215";
 const requiredPass = ZERO_ADDRESS;
 const credentialsGained = 'Test verified';
 const prize = web3.utils.toWei('1', 'ether');
@@ -55,8 +55,8 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
     'ERC721',
   ]);
 
-  const solveTester = async (testerContract, tokenId, proof, input, caller = solver) => {
-    await testerContract.solveTester(
+  const solveTest = async (testContract, tokenId, proof, input, caller = solver) => {
+    await testContract.solveTest(
         tokenId,
         [proof.pi_a[0], proof.pi_a[1]],
         [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
@@ -68,46 +68,46 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
 
   context('with minted tokens', function () {
     beforeEach(async function () {
-      await this.testerCreator.createMultipleChoiceTest(
-        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+      await this.testCreator.createMultipleChoiceTest(
+        credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
         { from: owner, value: prize }
       );
-      await this.testerCreator.createMultipleChoiceTest(
-          testerURI, solutionHashB, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createMultipleChoiceTest(
+        credentialLimit, timeLimit, requiredPass, solutionHashB, credentialsGained, testURI, 
+        { from: owner, value: prize }
       );
-      await this.testerCreator.createOpenAnswerTest(
-          testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createOpenAnswerTest(
+        credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
+        { from: owner, value: prize }
       )
-      await this.testerCreator.createOpenAnswerTest(
-          testerURI, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createOpenAnswerTest(
+        credentialLimit, timeLimit, requiredPass, answerHashesB, credentialsGained, testURI,
+        { from: owner, value: prize }
       )
-      await this.testerCreator.createMixedTest(
-          testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createMixedTest(
+        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
+        { from: owner, value: prize }
       )
-      await this.testerCreator.createMixedTest(
-          testerURI, solutionHashB, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createMixedTest(
+        credentialLimit, timeLimit, requiredPass, solutionHashB, answerHashesB, credentialsGained, testURI,
+        { from: owner, value: prize }
       )
 
-      const _hashes = await this.testerCreator.getOpenAnswerTest('5')
+      const _hashes = await this.testCreator.getOpenAnswerTest('5')
 
-      // Solving these testers
-      await solveTester(this.testerCreator, '1', multipleProofA, multiplePublicA)
-      await solveTester(this.testerCreator, '2', multipleProofB, multiplePublicB)
-      await solveTester(this.testerCreator, '3', openProofA, openPublicA)
-      await solveTester(this.testerCreator, '4', openProofB, openPublicB)
-      await solveTester(this.testerCreator, '5', mixedProofA, mixedPublicA)
-      await solveTester(this.testerCreator, '6', mixedProofB, mixedPublicB)
+      // Solving these tests
+      await solveTest(this.testCreator, '1', multipleProofA, multiplePublicA)
+      await solveTest(this.testCreator, '2', multipleProofB, multiplePublicB)
+      await solveTest(this.testCreator, '3', openProofA, openPublicA)
+      await solveTest(this.testCreator, '4', openProofB, openPublicB)
+      await solveTest(this.testCreator, '5', mixedProofA, mixedPublicA)
+      await solveTest(this.testCreator, '6', mixedProofB, mixedPublicB)
     });
 
     describe('balanceOf', function () {
       context('when the given address owns some tokens', function () {
         it('returns the amount of tokens owned by the given address', async function () {
-          expect(await this.testerCreator.balanceOf(owner)).to.be.bignumber.equal('6');
+          expect(await this.testCreator.balanceOf(owner)).to.be.bignumber.equal('6');
           expect(await this.credentials.balanceOf(solver)).to.be.bignumber.equal('6');
         });
       });
@@ -151,7 +151,7 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
       const tokenId = firstTokenId;
       const data = '0x42';
 
-      it('cannot transfer testers', async function () {
+      it('cannot transfer tests', async function () {
         await expectRevert(
             this.token.transferFrom(owner, newOwner, 1, { from: owner })
             ,
@@ -223,8 +223,8 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
     'ERC721Enumerable',
   ]);
 
-  const solveTester = async (testerContract, tokenId, proof, input, caller = solver) => {
-    await testerContract.solveTester(
+  const solveTest = async (testContract, tokenId, proof, input, caller = solver) => {
+    await testContract.solveTest(
         tokenId,
         [proof.pi_a[0], proof.pi_a[1]],
         [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
@@ -236,38 +236,38 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
 
   context('with minted tokens', function () {
     beforeEach(async function () {
-      await this.testerCreator.createMultipleChoiceTest(
-        testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+      await this.testCreator.createMultipleChoiceTest(
+        credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
         { from: owner, value: prize }
       );
-      await this.testerCreator.createMultipleChoiceTest(
-          testerURI, solutionHashB, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createMultipleChoiceTest(
+        credentialLimit, timeLimit, requiredPass, solutionHashB, credentialsGained, testURI, 
+        { from: owner, value: prize }
       );
-      await this.testerCreator.createOpenAnswerTest(
-          testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createOpenAnswerTest(
+        credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
+        { from: owner, value: prize }
       )
-      await this.testerCreator.createOpenAnswerTest(
-          testerURI, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createOpenAnswerTest(
+        credentialLimit, timeLimit, requiredPass, answerHashesB, credentialsGained, testURI,
+        { from: owner, value: prize }
       )
-      await this.testerCreator.createMixedTest(
-          testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createMixedTest(
+        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
+        { from: owner, value: prize }
       )
-      await this.testerCreator.createMixedTest(
-          testerURI, solutionHashB, answerHashesB, timeLimit, credentialLimit, requiredPass, credentialsGained,
-          { from: owner, value: prize }
+      await this.testCreator.createMixedTest(
+        credentialLimit, timeLimit, requiredPass, solutionHashB, answerHashesB, credentialsGained, testURI,
+        { from: owner, value: prize }
       )
 
-      // Solving these testers
-      await solveTester(this.testerCreator, '1', multipleProofA, multiplePublicA)
-      await solveTester(this.testerCreator, '2', multipleProofB, multiplePublicB)
-      await solveTester(this.testerCreator, '3', openProofA, openPublicA)
-      await solveTester(this.testerCreator, '4', openProofB, openPublicB)
-      await solveTester(this.testerCreator, '5', mixedProofA, mixedPublicA)
-      await solveTester(this.testerCreator, '6', mixedProofB, mixedPublicB)
+      // Solving these tests
+      await solveTest(this.testCreator, '1', multipleProofA, multiplePublicA)
+      await solveTest(this.testCreator, '2', multipleProofB, multiplePublicB)
+      await solveTest(this.testCreator, '3', openProofA, openPublicA)
+      await solveTest(this.testCreator, '4', openProofB, openPublicB)
+      await solveTest(this.testCreator, '5', mixedProofA, mixedPublicA)
+      await solveTest(this.testCreator, '6', mixedProofB, mixedPublicB)
     });
 
     describe('totalSupply', function () {
@@ -279,14 +279,14 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
     describe('tokenOfOwnerByIndex', function () {
       describe('when the given index is lower than the amount of tokens owned by the given address', function () {
         it('returns the token ID placed at the given index', async function () {
-          expect(await this.testerCreator.tokenOfOwnerByIndex(owner, 0)).to.be.bignumber.equal(firstTokenId);
+          expect(await this.testCreator.tokenOfOwnerByIndex(owner, 0)).to.be.bignumber.equal(firstTokenId);
         });
       });
 
       describe('when the index is greater than or equal to the total tokens owned by the given address', function () {
         it('reverts', async function () {
           await expectRevert(
-            this.testerCreator.tokenOfOwnerByIndex(owner, 7), 'Index out of bounds',
+            this.testCreator.tokenOfOwnerByIndex(owner, 7), 'Index out of bounds',
           );
         });
       });
@@ -294,7 +294,7 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
       describe('when the given address does not own any token', function () {
         it('reverts', async function () {
           await expectRevert(
-            this.testerCreator.tokenOfOwnerByIndex(other, 0), 'Index out of bounds',
+            this.testCreator.tokenOfOwnerByIndex(other, 0), 'Index out of bounds',
           );
         });
       });
@@ -313,7 +313,7 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
 
       it('reverts if index is greater than supply', async function () {
         await expectRevert(
-          this.testerCreator.tokenByIndex(6), 'Index out of bounds',
+          this.testCreator.tokenByIndex(6), 'Index out of bounds',
         );
       });
 
@@ -338,29 +338,29 @@ function shouldBehaveLikeERC721Metadata (errorPrefix, name, symbol, owner) {
 
     describe('token URI', function () {
       beforeEach(async function () {
-        await this.testerCreator.createMultipleChoiceTest(
-          testerURI, solutionHashA, timeLimit, credentialLimit, requiredPass, credentialsGained,
+        await this.testCreator.createMultipleChoiceTest(
+          credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
           { from: owner, value: prize }
         );
-        await this.testerCreator.createOpenAnswerTest(
-            testerURI, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
-            { from: owner, value: prize }
+        await this.testCreator.createOpenAnswerTest(
+          credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
+          { from: owner, value: prize }
         )
-        await this.testerCreator.createMixedTest(
-            testerURI, solutionHashA, answerHashesA, timeLimit, credentialLimit, requiredPass, credentialsGained,
-            { from: owner, value: prize }
+        await this.testCreator.createMixedTest(
+          credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
+          { from: owner, value: prize }
         )
       });
 
       it('return the given URI', async function () {
-        expect(await this.token.tokenURI('1')).to.be.equal(testerURI);
-        expect(await this.token.tokenURI('2')).to.be.equal(testerURI);
-        expect(await this.token.tokenURI('3')).to.be.equal(testerURI);
+        expect(await this.token.tokenURI('1')).to.be.equal(testURI);
+        expect(await this.token.tokenURI('2')).to.be.equal(testURI);
+        expect(await this.token.tokenURI('3')).to.be.equal(testURI);
       });
 
       it('reverts when queried for non existent token id', async function () {
         await expectRevert(
-          this.token.tokenURI(nonExistentTokenId), 'Tester does not exist',
+          this.token.tokenURI(nonExistentTokenId), 'Test does not exist',
         );
       });
 

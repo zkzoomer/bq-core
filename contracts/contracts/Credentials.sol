@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./TesterCreator.sol";
+import "./TestCreator.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
@@ -22,21 +22,21 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
 
     // Revert messages -- Block Qualified Credentials cannot be transferred
     // This is done to aid with credentials: one can verify on-chain the address that created a test,
-    // that is, the owner of the corresponding Block Qualified Tester NFT.
+    // that is, the owner of the corresponding Block Qualified test NFT.
     string approveRevertMessage = "BQC: cannot approve credentials";
     string transferRevertMessage = "BQC: cannot transfer credentials";
 
-    // Owner contract, the tester creator
-    TesterCreator testerContract;
+    // Owner contract, the test creator
+    TestCreator testContract;
 
     // Mapping from address to their (enumerable) set of received credentials
     mapping (address => EnumerableSet.UintSet) private _receivedCredentials;
 
+    // Mapping from testId to a mapping from address to the result they got in the credential
+    mapping(uint256 => mapping(address => uint256)) private _credentialReceiverResults;
+
     // Mapping from credential IDs to their (enumerable) set of receiver addresses
     mapping (uint256 => EnumerableSet.AddressSet) private _credentialReceivers;
-
-    // Mapping from credential IDs to the result they obtained
-    mapping (uint256 => uint256) private _credentialResults;
 
     // Token name
     string private _name;
@@ -49,7 +49,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         _name = "Block Qualified Credentials";
         _symbol = "BQC";
 
-        testerContract = TesterCreator(msg.sender);
+        testContract = TestCreator(msg.sender);
 
         // register the supported interfaces to conform to ERC721 via ERC165
         /*
@@ -102,62 +102,66 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     }
 
     /**
-     * @dev Mints a new credentials NFT corresponding to the multiple choice test defined by its `testerId`
+     * @dev Mints a new credentials NFT corresponding to the multiple choice test defined by its `testId`
      */
-    function giveCredentials(address receiver, uint256 testerId, uint256 results) external onlyOwner {
-        require(!_receivedCredentials[receiver].contains(testerId), "Solver already gained credentials");
+    function giveCredentials(address receiver, uint256 testId, uint256 results) external onlyOwner {
+        /* require(!_receivedCredentials[receiver].contains(testId), "Solver already gained credentials"); */
 
-        // Mints a new credential NFT
-        _receivedCredentials[receiver].add(testerId);
-        _credentialReceivers[testerId].add(receiver);
-        _credentialResults[testerId] = results;
+        // Sets or updates the receiver's test results
+        _credentialReceiverResults[testId][receiver] = results;
 
-        // Emits a transfer event giving the credentials from the tester smart contract to the receiver
-        emit Transfer(address(testerContract), receiver, testerId);
+        // Mints a new credential NFT if it does not exist yet
+        if (!_receivedCredentials[receiver].contains(testId)) { 
+            _receivedCredentials[receiver].add(testId);
+            _credentialReceivers[testId].add(receiver);
+            
+            // Emits a transfer event giving the credentials from the test smart contract to the receiver
+            emit Transfer(address(testContract), receiver, testId);
+        }
     }
 
-    // If tester is invalid you can see it by checking the credential itself
+    // If test is invalid you can see it by checking the credential itself
     // YOu cannot burn them because if it got compromiused and a bunch of people minted them you would not be able to burn em all in the delete tx
 
     /**
-     * @dev Returns the credentials string, obtained from the tester contract
+     * @dev Returns the credentials string, obtained from the test contract
      */
-    function getCredential(uint256 testerId) external view returns (string memory) {
-        require(testerContract.testerExists(testerId), "Tester does not exist");
+    function getCredential(uint256 testId) external view returns (string memory) {
+        require(testContract.testExists(testId), "test does not exist");
 
-        return testerContract.getTester(testerId).credentialsGained;
+        return testContract.getTest(testId).credentialsGained;
     }
 
     /**
      * @dev Returns the original test type of the credential: 0, 1 or 2
      */
-    function getCredentialType(uint256 testerId) external view returns (uint8) {
-        require(testerContract.testerExists(testerId), "Tester does not exist");
+    function getCredentialType(uint256 testId) external view returns (uint8) {
+        require(testContract.testExists(testId), "test does not exist");
 
-        return testerContract.getTester(testerId).testType;
+        return testContract.getTest(testId).testType;
     }
 
     /**
      * @dev Returns the credential result
      */
-    function getResults(uint256 testerId) external view returns (uint) {
-        return _credentialResults[testerId];
+    function getResults(address receiver, uint256 testId) external view returns (uint) {
+        return _credentialReceiverResults[testId][receiver];
     }
 
     /**
-     * @dev Returns the credentials tokenURI, which is linked to the tester contract
+     * @dev Returns the credentials tokenURI, which is linked to the test contract
      */
-    function tokenURI(uint256 testerId) external view override returns (string memory) {
-        return testerContract.tokenURI(testerId);
+    function tokenURI(uint256 testId) external view override returns (string memory) {
+        return testContract.tokenURI(testId);
     }
     
     /**
      * @dev See {IERC721-ownerOf}.
      *
-     * Here owner represents ownership of the original Tester NFT
+     * Here owner represents ownership of the original test NFT
      */
-    function ownerOf(uint256 testerId) public view virtual override returns (address) {
-        return testerContract.ownerOf(testerId);
+    function ownerOf(uint256 testId) public view virtual override returns (address) {
+        return testContract.ownerOf(testId);
     }
 
     /**
@@ -176,10 +180,10 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * The `totalSupply` is defined as the number of VALID Credentials that have been given
      */
     function totalSupply() public view virtual override returns (uint256 count) {
-        uint256 nTokens = testerContract.totalSupply();
+        uint256 nTokens = testContract.totalSupply();
         for (uint256 i = 0; i < nTokens; ++i) {
-            uint256 testerId = testerContract.tokenByIndex(i);
-            count += _credentialReceivers[testerId].length();
+            uint256 testId = testContract.tokenByIndex(i);
+            count += _credentialReceivers[testId].length();
         }
     }
 
@@ -196,17 +200,17 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     /**
      * @dev See {IERC721Enumerable-tokenByIndex}.
      *
-     * Returns the corresponding tester by index
+     * Returns the corresponding test by index
      */
     function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
-        return testerContract.tokenByIndex(index);
+        return testContract.tokenByIndex(index);
     }
 
     /**
-     * @dev Returns the list of addresses that received a credential defined by a `testerId`
+     * @dev Returns the list of addresses that received a credential defined by a `testId`
      */
-    function credentialReceivers(uint256 testerId) public view returns (address[] memory) {
-        return _credentialReceivers[testerId].values();
+    function credentialReceivers(uint256 testId) public view returns (address[] memory) {
+        return _credentialReceivers[testId].values();
     }
 
     /**

@@ -21,7 +21,7 @@ interface RequiredPass {
     function balanceOf(address _owner) external view returns (uint256);
 }
 
-contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, ReentrancyGuard {
+contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, ReentrancyGuard {
     using SafeMath for uint8;
     using SafeMath for uint32;
     using SafeMath for uint256;
@@ -30,11 +30,11 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     using EnumerableMap for EnumerableMap.UintToAddressMap;
     using Strings for uint256;
 
-    // Revert messages -- Block Qualified Testers cannot be transferred
+    // Revert messages -- Block Qualified tests cannot be transferred
     // This is done to aid with credentials: one can verify on-chain the address that created a test,
-    // that is, the owner of the corresponding Block Qualified Tester NFT.
-    string approveRevertMessage = "BQT: cannot approve testers";
-    string transferRevertMessage = "BQT: cannot transfer testers";
+    // that is, the owner of the corresponding Block Qualified test NFT.
+    string approveRevertMessage = "BQT: cannot approve tests";
+    string transferRevertMessage = "BQT: cannot transfer tests";
 
     // Smart contract for giving credentials
     Credentials public credentialsContract;
@@ -45,8 +45,8 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     // Enumerable mapping from token ids to their owners
     EnumerableMap.UintToAddressMap private _tokenOwners;
 
-    // Number of testers that have been created
-    uint256 private _nTesters;
+    // Number of tests that have been created
+    uint256 private _ntests;
 
     // Token name
     string private _name;
@@ -54,14 +54,13 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     // Token symbol
     string private _symbol;
 
-    // TODO: tight pack it
     struct Test {
         uint8 testType;
-        uint256 prize;
-        uint32 solvers;
+        uint24 solvers;
+        uint24 credentialLimit;
         uint32 timeLimit;
-        uint32 credentialLimit;
         address requiredPass;
+        uint256 prize;
         string credentialsGained;
     }
 
@@ -70,14 +69,14 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
         mapping(uint256 => uint256[]) answerHashes;
     }
 
-    // Mapping defining each tester
+    // Mapping defining each test
     mapping(uint256 => Test) private _tests;
     // Mapping with the necessary info for the different kinds of tests
     mapping(uint256 => uint256) private _multipleChoiceTests;  // Solution hashes of each
     mapping(uint256 => uint256[]) private _openAnswerTests;  // All answer hashes of each
 
     // Mapping for token URIs
-    mapping (uint256 => string) private _tokenURIs;  // URL containing the multiple choice test for each tester
+    mapping (uint256 => string) private _tokenURIs;  // URL containing the multiple choice test for each test
 
     // Salts that have been already used before for submitting solutions
     mapping (uint256 => bool) public usedSalts;
@@ -87,7 +86,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
      * @dev Initializes the contract by setting a `name` and a `symbol`
      */
     constructor (address _poseidonHasher) TestVerifier(_poseidonHasher) {
-        _name = "Block Qualified Testers";
+        _name = "Block Qualified tests";
         _symbol = "BQT";
 
         credentialsContract = new Credentials();
@@ -141,97 +140,97 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     }
 
     function createMultipleChoiceTest(
-        string memory _testerURI, 
-        uint256 _solutionHash, 
+        uint24 _credentialLimit,
         uint32 _timeLimit,
-        uint32 _credentialLimit,
         address _requiredPass,
-        string memory _credentialGained
+        uint256 _solutionHash, 
+        string memory _credentialsGained,
+        string memory _testURI
     ) external payable {
-        // Increase the number of testers available
-        _nTesters++;
-        uint256 _testerId = _nTesters;
+        // Increase the number of tests available
+        _ntests++;
+        uint256 _testId = _ntests;
 
-        _multipleChoiceTests[_testerId] = _solutionHash;
+        _multipleChoiceTests[_testId] = _solutionHash;
 
-        _createTester(
-            _testerId,
+        _createTest(
             0,
-            _timeLimit,
             _credentialLimit,
+            _timeLimit,
             _requiredPass,
-            _credentialGained,
-            _testerURI
+            _credentialsGained,
+            _testId,
+            _testURI
         );
     }
 
     function createOpenAnswerTest(
-        string memory _testerURI, 
-        uint256[] calldata _answerHashes, 
+        uint24 _credentialLimit,
         uint32 _timeLimit,
-        uint32 _credentialLimit,
         address _requiredPass,
-        string memory _credentialGained
+        uint256[] calldata _answerHashes,
+        string memory _credentialsGained,
+        string memory _testURI
     ) external payable {
-        require(_answerHashes.length <= 50, "Number of questions must be < 50");
+        require(_answerHashes.length > 0 && _answerHashes.length <= 50, "Invalid number of questions");
 
-        // Increase the number of testers available
-        _nTesters++;
-        uint256 _testerId = _nTesters;
+        // Increase the number of tests available
+        _ntests++;
+        uint256 _testId = _ntests;
 
-        _openAnswerTests[_testerId] = _answerHashes;
+        _openAnswerTests[_testId] = _answerHashes;
 
-        _createTester(
-            _testerId,
+        _createTest(
             1,
-            _timeLimit,
             _credentialLimit,
+            _timeLimit,
             _requiredPass,
-            _credentialGained,
-            _testerURI
+            _credentialsGained,
+            _testId,
+            _testURI
         );
 
     }
 
     function createMixedTest(
-        string memory _testerURI, 
-        uint256 _solutionHash,
-        uint256[] calldata _answerHashes, 
+        uint24 _credentialLimit,
         uint32 _timeLimit,
-        uint32 _credentialLimit,
         address _requiredPass,
-        string memory _credentialGained
+        uint256 _solutionHash,
+        uint256[] calldata _answerHashes,
+        string memory _credentialsGained,
+        string memory _testURI
     ) external payable {
-        require(_answerHashes.length <= 50, "Number of questions must be < 50");
+        require(_answerHashes.length > 0 && _answerHashes.length <= 50, "Invalid number of questions");
 
-        // Increase the number of testers available
-        _nTesters++;
-        uint256 _testerId = _nTesters;
+        // Increase the number of tests available
+        _ntests++;
+        uint256 _testId = _ntests;
         
         // A mixed test is simply a combination of a multiple choice test and an open answer test
-        _multipleChoiceTests[_testerId] = _solutionHash;
-        _openAnswerTests[_testerId] = _answerHashes;
+        _multipleChoiceTests[_testId] = _solutionHash;
+        _openAnswerTests[_testId] = _answerHashes;
 
-        _createTester(
-            _testerId,
+        _createTest(
             2,
-            _timeLimit,
             _credentialLimit,
+            _timeLimit,
             _requiredPass,
-            _credentialGained,
-            _testerURI
+            _credentialsGained,
+            _testId,
+            _testURI
         );
 
     }
 
-    function _createTester(
-        uint256 _testerId,
+    function _createTest(
         uint8 _testType,
+        uint24 _credentialLimit,
         uint32 _timeLimit,
-        uint32 _credentialLimit,
         address _requiredPass,
-        string memory _credentialGained,
-        string memory _testerURI
+        string memory _credentialsGained,
+        uint256 _testId,
+        string memory _testURI
     ) internal {
         require(_timeLimit > block.timestamp, "Time limit is in the past");
         require(_credentialLimit > 0, "Credential limit must be above zero");
@@ -240,129 +239,123 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
         }
 
         // Setting the given URI that holds all of the questions
-        _tokenURIs[_testerId] = _testerURI;
+        _tokenURIs[_testId] = _testURI;
 
-        // Defining the test object for this testerId
-        _tests[_testerId] = Test(
-            _testType,
-            msg.value,
-            0,
-            _timeLimit,
-            _credentialLimit,
-            _requiredPass,
-            _credentialGained
+        // Defining the test object for this testId
+        _tests[_testId] = Test(
+            _testType,          // testType
+            0,                  // solvers
+            _credentialLimit,   // credentialLimit
+            _timeLimit,         // timeLimit
+            _requiredPass,      // requiredPass
+            msg.value,          // prize
+            _credentialsGained  // credentialsGained
         );
 
         // Minting this new nft
-        _holderTokens[msg.sender].add(_testerId);
-        _tokenOwners.set(_testerId, msg.sender);
-        emit Transfer(address(0), msg.sender, _testerId);
+        _holderTokens[msg.sender].add(_testId);
+        _tokenOwners.set(_testId, msg.sender);
+        emit Transfer(address(0), msg.sender, _testId);
     }
     
     /**
      * @dev Returns the struct that defines a Test
      */
-    function getTester(uint256 testerId) external view returns (Test memory) {
-        require(_exists(testerId), "Test does not exist");
-        return _tests[testerId];
+    function getTest(uint256 testId) external view returns (Test memory) {
+        require(_exists(testId), "Test does not exist");
+        return _tests[testId];
     }
 
     /**
      * @dev Returns the solution hash that defines a multiple choice test
      * Also used with mixed tests
      */
-    function getMultipleChoiceTest(uint256 testerId) external view returns (uint256 solutionHash) {
-        require(_exists(testerId), "Test does not exist");
-        uint8 _testType = _tests[testerId].testType;
+    function getMultipleChoiceTest(uint256 testId) external view returns (uint256 solutionHash) {
+        require(_exists(testId), "Test does not exist");
+        uint8 _testType = _tests[testId].testType;
         require(_testType == 0 || _testType == 2, "Test is not multiple choice or mixed");
-        return _multipleChoiceTests[testerId];
+        return _multipleChoiceTests[testId];
     }
 
     /**
      * @dev Returns the list of solution hashes that define an open answer test
      * Also used with mixed tests
      */
-    function getOpenAnswerTest(uint256 testerId) external view returns (uint256[50] memory answerHashes) {
-        require(_exists(testerId), "Test does not exist");
-        uint8 _testType = _tests[testerId].testType;
+    function getOpenAnswerTest(uint256 testId) external view returns (uint256[50] memory answerHashes) {
+        require(_exists(testId), "Test does not exist");
+        uint8 _testType = _tests[testId].testType;
         require(_testType == 1 || _testType == 2, "Test is not open answer or mixed");
 
-        for (uint i = 0; i < _openAnswerTests[testerId].length; i++) {
-            answerHashes[i] = _openAnswerTests[testerId][i];
+        for (uint i = 0; i < _openAnswerTests[testId].length; i++) {
+            answerHashes[i] = _openAnswerTests[testId][i];
         }
-        for (uint i = _openAnswerTests[testerId].length; i < 50; i++) {
+        for (uint i = _openAnswerTests[testId].length; i < 50; i++) {
             answerHashes[i] = 15083001670805533818279519394606955016606512029788045584851323712461001330117;  // = Poseidon(keccak256(""))
         }
     }
 
     /**
-     * @dev Returns if a given tester is still valid, that is, if it exists
+     * @dev Returns if a given test is still valid, that is, if it exists
      */
-    function testerExists(uint256 testerId) external view returns (bool) {
-        return _exists(testerId);
+    function testExists(uint256 testId) external view returns (bool) {
+        return _exists(testId);
     }
 
     /**
      * @dev Returns the test URI, which contains inside the questions
      */
-    function tokenURI(uint256 testerId) external view override returns (string memory) {
-        require(_exists(testerId), "Test does not exist");
-        return _tokenURIs[testerId];
+    function tokenURI(uint256 testId) external view override returns (string memory) {
+        require(_exists(testId), "Test does not exist");
+        return _tokenURIs[testId];
     }
 
     /**
-     * @dev Allows the owner of a tester to no longer recognize it as valid by essentially burning it
-     * Deleting a test is **final**
+     * @dev Allows the owner of a test to no longer recognize it as valid by making it impossible to solve
+     * Removing a test is final and all gain credentials will also
      */
-    function deleteTester(uint256 testerId) external {
-        require(_exists(testerId), "Test does not exist");
-        require(ownerOf(testerId) == msg.sender, "Deleting tester that is not own");
+    function invalidateTest(uint256 testId) external nonReentrant {
+        require(_exists(testId), "Test does not exist");
+        require(_tests[testId].testType < 200, "Test was already invalidated");
+        require(ownerOf(testId) == msg.sender, "Deleting test that is not own");
 
-        // Burns the token from the `msg.sender` holdings
-        _holderTokens[msg.sender].remove(testerId);
-        _tokenOwners.remove(testerId);
-
-        bool wasSolved = _tests[testerId].solvers == 0 ? false : true;
-        uint256 prize = _tests[testerId].prize;
-
-        // Some still lives on chain but cannot be accessed by smart contract calls
-        delete _tests[testerId];
-        delete _tokenURIs[testerId];
+        // Test still lives on chain for reference, but can no longer be solved
+        // Invalid tests are identified by a testType >= 200
+        _tests[testId].testType += 200;
 
         // Returns the funds to the owner if the test was never solved
-        if (!wasSolved) {
-            payable(msg.sender).transfer(prize);
+        if (_tests[testId].solvers == 0) {
+            payable(msg.sender).transfer(_tests[testId].prize);
         }
 
-        emit Transfer(msg.sender, address(0), testerId);
+        emit Transfer(msg.sender, address(0), testId);
     }
 
     /**
      * @dev Allows users to attempt a test solution, minting a Credentials NFT if successful with their results
      */
-    function solveTester(
-        uint256 testerId, 
+    function solveTest(
+        uint256 testId, 
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
         uint[] calldata input  // 0: [solvingHash, salt], 1: [result, salt], 2: [solvingHash, result, multipleChoiceSalt, openAnswersSalt]
     ) external nonReentrant {
-        require(_exists(testerId), "Solving test that does not exist");
+        require(_exists(testId), "Solving test that does not exist");
 
-        Test memory _test = _tests[testerId];
+        Test memory _test = _tests[testId];
         uint8 testType = _test.testType;
-        uint256 results;
+        uint256 result;
         if ( testType == 0 ) {  // Multiple choice test
 
             require(input.length == 2, "Invalid input length");
             
             require(!usedSalts[input[1]], "Salt was already used");
 
-            _validateTester(testerId, _test);
+            _validateTest(testId, _test);
         
-            // Verify solution and get results
-            results = getMultipleChoiceResults(
-                _multipleChoiceTests[testerId],  // Solution hash
+            // Verify solution and get result
+            result = getMultipleChoiceResults(
+                _multipleChoiceTests[testId],  // Solution hash
                 a, 
                 b, 
                 c, 
@@ -377,11 +370,11 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
             require(input.length == 2, "Invalid input length");
             require(!usedSalts[input[1]], "Salt was already used");
             
-            _validateTester(testerId, _test);
-            uint[] memory answerHashes = _openAnswerTests[testerId];
+            _validateTest(testId, _test);
+            uint[] memory answerHashes = _openAnswerTests[testId];
         
-            // Verify solution and get results
-            results = getOpenAnswerResults(
+            // Verify solution and get result
+            result = getOpenAnswerResults(
                 a, 
                 b, 
                 c, 
@@ -397,12 +390,12 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
             require(input.length == 4, "Invalid input length");
             require(!usedSalts[input[2]] && !usedSalts[input[3]], "Salt was already used");
 
-            _validateTester(testerId, _test);
-            uint[] memory answerHashes = _openAnswerTests[testerId];
+            _validateTest(testId, _test);
+            uint[] memory answerHashes = _openAnswerTests[testId];
 
-            // Verify solution and get results
-            results = getMixedTestResults(
-                _multipleChoiceTests[testerId],  // Solution hash
+            // Verify solution and get result
+            result = getMixedTestResults(
+                _multipleChoiceTests[testId],  // Solution hash
                 a, 
                 b, 
                 c, 
@@ -415,15 +408,27 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
 
             usedSalts[input[2]] = true;
             usedSalts[input[3]] = true;
+        } else if ( testType >= 200 ) {
+            revert("Test has been deleted and can no longer be solved");
+        } 
+
+        if (credentialsContract.getResults(msg.sender, testId) == 0) {
+            // If the user had not received this credential, it increases the number of solvers
+            _tests[testId].solvers++;
+        } else {
+            require(result > credentialsContract.getResults(msg.sender, testId), "Your existing credential has a better result");
         }
 
         if (_test.solvers == 0) { payable(msg.sender).transfer(_test.prize); }
-        credentialsContract.giveCredentials(msg.sender, testerId, results);
-        _tests[testerId].solvers++;
+        credentialsContract.giveCredentials(msg.sender, testId, result);
+
+        // TODO: add gas refund here? currently thinking: no
+        // The funds in the smart contract could be drained by a pityful attacker,
+        // to no loss and the only gain of increasing entropy
     }
 
-    function _validateTester(uint256 testerId, Test memory _test) internal view {
-        require(msg.sender != ownerOf(testerId), "Tester cannot be solved by owner");
+    function _validateTest(uint256 testId, Test memory _test) internal view {
+        require(msg.sender != ownerOf(testId), "Test cannot be solved by owner");
         require(_test.credentialLimit == 0 || _test.solvers < _test.credentialLimit, "Maximum number of credentials reached");
         require(block.timestamp <= _test.timeLimit, "Time limit for this credential reached");
         if(_test.requiredPass != address(0)) {
@@ -473,7 +478,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     /**
      * @dev See {IERC721-approve}.
      *
-     * Only present to be ERC-721 compliant. Testers cannot be transferred, and as such cannot be approved for spending.
+     * Only present to be ERC-721 compliant. tests cannot be transferred, and as such cannot be approved for spending.
      */
     function approve(address /* _approved */, uint256 /* _tokenId */) public view virtual override {
         revert(approveRevertMessage);
@@ -482,7 +487,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     /**
      * @dev See {IERC721-getApproved}.
      *
-     * Only present to be ERC-721 compliant. Testers cannot be transferred, and as such are never approved for spending.
+     * Only present to be ERC-721 compliant. tests cannot be transferred, and as such are never approved for spending.
      */
     function getApproved(uint256 /* tokenId */) public view virtual override returns (address) {
         return address(0);
@@ -491,7 +496,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     /**
      * @dev See {IERC721-setApprovalForAll}.
      *
-     * Only present to be ERC721 compliant. Testers cannot be transferred, and as such cannot be approved for spending.
+     * Only present to be ERC721 compliant. tests cannot be transferred, and as such cannot be approved for spending.
      */
     function setApprovalForAll(address /* _operator */, bool /* _approved */) public view virtual override {
         revert(approveRevertMessage);
@@ -500,7 +505,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     /**
      * @dev See {IERC721-isApprovedForAll}.
      *
-     * Only present to be ERC-721 compliant. Testers cannot be transferred, and as such are never approved for spending.
+     * Only present to be ERC-721 compliant. tests cannot be transferred, and as such are never approved for spending.
      */
     function isApprovedForAll(address /* owner */, address /* operator */) public view virtual override returns (bool) {
         return false;
@@ -509,7 +514,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     /**
      * @dev See {IERC721-transferFrom}.
      *
-     * Only present to be ERC721 compliant. Testers cannot be transferred.
+     * Only present to be ERC721 compliant. tests cannot be transferred.
      */
     function transferFrom(address /* from */, address /* to */, uint256 /* tokenId */) public view virtual override {
         revert(transferRevertMessage);
@@ -525,7 +530,7 @@ contract TesterCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata,
     /**
      * @dev See {IERC721-safeTransferFrom}.
      *
-     * Only present to be ERC721 compliant. Testers cannot be transferred.
+     * Only present to be ERC721 compliant. tests cannot be transferred.
      */
     function safeTransferFrom(address /* from */, address /* to */, uint256 /* tokenId */, bytes memory /* _data */) public view virtual override {
         revert(transferRevertMessage);

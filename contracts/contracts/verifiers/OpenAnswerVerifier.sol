@@ -221,8 +221,6 @@ contract OpenAnswerVerifier {
             13108772501335828096729218750993763870558291902776055986219909359792781203929
         );
     }
-    // TODO: do calculations PRIOR, simply send data to smart contract - saves on deployment gas
-    // TODO: tests MUST have at least one question - verify upon creating and wherever else
 
     function verifyingKey() internal pure returns (VerifyingKey memory vk) {
         vk.alfa1 = Pairing.G1Point(
@@ -525,9 +523,8 @@ contract OpenAnswerVerifier {
     ) internal view returns (uint) {
         uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
         VerifyingKey memory vk = verifyingKey();
-        require(input.length <= 50, "verifier-bad-input");
+        require(input.length > 0 && input.length <= 50, "verifier-bad-input");
         // Compute the linear combination vk_x
-        // TODO: is this gas saving? loading vk.IC[0] instead of initializing empty point
         Pairing.G1Point memory vk_x = vk.IC[0];
 
         require(result < snark_scalar_field,"verifier-gte-snark-scalar-field");
