@@ -5,7 +5,7 @@ const poseidonMerkle = require('./poseidonMerkle.js');
 const leafArray = Array.from({length: 64}, (_, i) => 4)
 const multipleChoiceSalt = "250"
 
-const len = 50
+const len = 64
 const correctAnswers = new Array(len).fill(poseidon([0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470]));
 correctAnswers[0] = poseidon(['350'])
 correctAnswers[1] = poseidon(['250'])
