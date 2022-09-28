@@ -21,7 +21,7 @@ interface RequiredPass {
     function balanceOf(address _owner) external view returns (uint256);
 }
 
-contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, ReentrancyGuard {
+contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, ReentrancyGuard {
     using SafeMath for uint8;
     using SafeMath for uint32;
     using SafeMath for uint256;
@@ -36,6 +36,8 @@ contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, I
     string approveRevertMessage = "BQT: cannot approve tests";
     string transferRevertMessage = "BQT: cannot transfer tests";
 
+    // Smart contract for verifying tests
+    TestVerifier public verifierContract;
     // Smart contract for giving credentials
     Credentials public credentialsContract;
 
@@ -73,7 +75,7 @@ contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, I
     mapping(uint256 => Test) private _tests;
     // Mapping with the necessary info for the different kinds of tests
     mapping(uint256 => uint256) private _multipleChoiceTests;  // Solution hashes of each
-    mapping(uint256 => uint256[]) private _openAnswerTests;  // All answer hashes of each
+    mapping(uint256 => uint256) private _answerHashesRoot;  // Merkle root of the answer hashes tree
 
     // Mapping for token URIs
     mapping (uint256 => string) private _tokenURIs;  // URL containing the multiple choice test for each test
@@ -81,15 +83,15 @@ contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, I
     // Salts that have been already used before for submitting solutions
     mapping (uint256 => bool) public usedSalts;
 
-
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol`
      */
-    constructor (address _poseidonHasher) TestVerifier(_poseidonHasher) {
+    constructor () {
         _name = "Block Qualified tests";
         _symbol = "BQT";
 
         credentialsContract = new Credentials();
+        verifierContract = new TestVerifier();
 
         // register the supported interfaces to conform to ERC721 via ERC165
         /*
@@ -139,103 +141,38 @@ contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, I
         return _symbol;
     }
 
-    function createMultipleChoiceTest(
-        uint24 _credentialLimit,
-        uint32 _timeLimit,
-        address _requiredPass,
-        uint256 _solutionHash, 
-        string memory _credentialsGained,
-        string memory _testURI
-    ) external payable {
-        // Increase the number of tests available
-        _ntests++;
-        uint256 _testId = _ntests;
-
-        _multipleChoiceTests[_testId] = _solutionHash;
-
-        _createTest(
-            0,
-            _credentialLimit,
-            _timeLimit,
-            _requiredPass,
-            _credentialsGained,
-            _testId,
-            _testURI
-        );
-    }
-
-    function createOpenAnswerTest(
-        uint24 _credentialLimit,
-        uint32 _timeLimit,
-        address _requiredPass,
-        uint256[] calldata _answerHashes,
-        string memory _credentialsGained,
-        string memory _testURI
-    ) external payable {
-        require(_answerHashes.length > 0 && _answerHashes.length <= 50, "Invalid number of questions");
-
-        // Increase the number of tests available
-        _ntests++;
-        uint256 _testId = _ntests;
-
-        _openAnswerTests[_testId] = _answerHashes;
-
-        _createTest(
-            1,
-            _credentialLimit,
-            _timeLimit,
-            _requiredPass,
-            _credentialsGained,
-            _testId,
-            _testURI
-        );
-
-    }
-
-    function createMixedTest(
-        uint24 _credentialLimit,
-        uint32 _timeLimit,
-        address _requiredPass,
-        uint256 _solutionHash,
-        uint256[] calldata _answerHashes,
-        string memory _credentialsGained,
-        string memory _testURI
-    ) external payable {
-        require(_answerHashes.length > 0 && _answerHashes.length <= 50, "Invalid number of questions");
-
-        // Increase the number of tests available
-        _ntests++;
-        uint256 _testId = _ntests;
-        
-        // A mixed test is simply a combination of a multiple choice test and an open answer test
-        _multipleChoiceTests[_testId] = _solutionHash;
-        _openAnswerTests[_testId] = _answerHashes;
-
-        _createTest(
-            2,
-            _credentialLimit,
-            _timeLimit,
-            _requiredPass,
-            _credentialsGained,
-            _testId,
-            _testURI
-        );
-
-    }
-
-    function _createTest(
+    /**
+     * @dev Creates a new multiple choice/open answer/mixed test, storing the defining hashes on chain
+     */
+    function createTest(
         uint8 _testType,
         uint24 _credentialLimit,
         uint32 _timeLimit,
+        uint256[] calldata _solvingHashes,
         address _requiredPass,
         string memory _credentialsGained,
-        uint256 _testId,
         string memory _testURI
-    ) internal {
+    ) external payable {
+        // Increase the number of tests available
+        _ntests++;
+        uint256 _testId = _ntests;
+
         require(_timeLimit > block.timestamp, "Time limit is in the past");
         require(_credentialLimit > 0, "Credential limit must be above zero");
         if(_requiredPass != address(0)) {
             require(RequiredPass(_requiredPass).balanceOf(msg.sender) >= 0);  // dev: invalid required pass address provided
+        }
+
+        // Storing the necessary information
+        if (_testType == 0) {  // Multiple choice test, providing the [solutionHash]
+            _multipleChoiceTests[_testId] = _solvingHashes[0];
+        } else if (_testType == 1) {  // Open answers test, providing the [answerHashesRoot]
+            _answerHashesRoot[_testId] = _solvingHashes[0];
+        } else if (_testType == 2) {  // Mixed test, providing [solutionHash, answerHashesRoot
+            _multipleChoiceTests[_testId] = _solvingHashes[0];
+            _answerHashesRoot[_testId] = _solvingHashes[1];
+        } else {
+            revert("Invalid test type");
         }
 
         // Setting the given URI that holds all of the questions
@@ -270,7 +207,7 @@ contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, I
      * @dev Returns the solution hash that defines a multiple choice test
      * Also used with mixed tests
      */
-    function getMultipleChoiceTest(uint256 testId) external view returns (uint256 solutionHash) {
+    function getMultipleChoiceTest(uint256 testId) external view returns (uint256) {
         require(_exists(testId), "Test does not exist");
         uint8 _testType = _tests[testId].testType;
         require(_testType == 0 || _testType == 2, "Test is not multiple choice or mixed");
@@ -281,17 +218,11 @@ contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, I
      * @dev Returns the list of solution hashes that define an open answer test
      * Also used with mixed tests
      */
-    function getOpenAnswerTest(uint256 testId) external view returns (uint256[50] memory answerHashes) {
+    function getAnswerHashesRoot(uint256 testId) external view returns (uint256) {
         require(_exists(testId), "Test does not exist");
         uint8 _testType = _tests[testId].testType;
         require(_testType == 1 || _testType == 2, "Test is not open answer or mixed");
-
-        for (uint i = 0; i < _openAnswerTests[testId].length; i++) {
-            answerHashes[i] = _openAnswerTests[testId][i];
-        }
-        for (uint i = _openAnswerTests[testId].length; i < 50; i++) {
-            answerHashes[i] = 15083001670805533818279519394606955016606512029788045584851323712461001330117;  // = Poseidon(keccak256(""))
-        }
+        return _answerHashesRoot[testId];
     }
 
     /**
@@ -338,7 +269,7 @@ contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, I
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
-        uint[] calldata input  // 0: [solvingHash, salt], 1: [result, salt], 2: [solvingHash, result, multipleChoiceSalt, openAnswersSalt]
+        uint[] calldata input  // 0: [solutionHash, salt], 1: [results, answerHashesRoot, salt], 2: [solutionHash, results, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
     ) external nonReentrant {
         require(_exists(testId), "Solving test that does not exist");
 
@@ -354,60 +285,47 @@ contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, I
             _validateTest(testId, _test);
         
             // Verify solution and get result
-            result = getMultipleChoiceResults(
-                _multipleChoiceTests[testId],  // Solution hash
-                a, 
-                b, 
-                c, 
-                input[0],  // solvingHash
-                input[1]   // salt
-            );
+            require(verifierContract.verifyMultipleProof(a, b, c, input), "Invalid proof");
+            result = 100;
+
+            require(input[0] == _multipleChoiceTests[testId], "Wrong solution");
 
             usedSalts[input[1]] = true;
             
         } else if ( testType == 1 ) {  // Open answer test
 
-            require(input.length == 2, "Invalid input length");
-            require(!usedSalts[input[1]], "Salt was already used");
+            require(input.length == 3, "Invalid input length");
+            require(!usedSalts[input[2]], "Salt was already used");
             
             _validateTest(testId, _test);
-            uint[] memory answerHashes = _openAnswerTests[testId];
-        
-            // Verify solution and get result
-            result = getOpenAnswerResults(
-                a, 
-                b, 
-                c, 
-                input[0],  // result
-                input[1],  // salt
-                answerHashes  // answerHashes
-            );
 
-            usedSalts[input[1]] = true;
+            // Ensuring the open answer test being solved is the one selected
+            require(input[1] == _answerHashesRoot[testId], "Solving for another test");
+
+            // Verify solution and get result
+            require(verifierContract.verifyOpenProof(a, b, c, input), "Invalid proof");
+            require(input[0] > 0, "No correct answers");
+            result = input[0];
+
+            usedSalts[input[2]] = true;
 
         } else if ( testType == 2 ) {  // Mixed test
 
-            require(input.length == 4, "Invalid input length");
-            require(!usedSalts[input[2]] && !usedSalts[input[3]], "Salt was already used");
+            require(input.length == 5, "Invalid input length");
+            require(!usedSalts[input[3]] && !usedSalts[input[4]], "Salt was already used");
 
             _validateTest(testId, _test);
-            uint[] memory answerHashes = _openAnswerTests[testId];
+
+            // Ensuring the open answer test being solved is the one selected
+            require(input[2] == _answerHashesRoot[testId], "Solving for another test");
 
             // Verify solution and get result
-            result = getMixedTestResults(
-                _multipleChoiceTests[testId],  // Solution hash
-                a, 
-                b, 
-                c, 
-                input[0],  // solvingHash
-                input[1],  // result
-                input[2],  // multipleChoiceSalt
-                input[3],  // openAnswersSalt
-                answerHashes  // answerHashes
-            );
+            require(verifierContract.verifyMixedProof(a, b, c, input), "Invalid proof");
+            result = (input[0] == _multipleChoiceTests[testId] ? 100 : 0) + input[1];
+            require(result > 0, "Wrong solution and no correct answers"); 
 
-            usedSalts[input[2]] = true;
             usedSalts[input[3]] = true;
+            usedSalts[input[4]] = true;
         } else if ( testType >= 200 ) {
             revert("Test has been deleted and can no longer be solved");
         } 
@@ -545,5 +463,4 @@ contract TestCreator is TestVerifier, ERC165Storage, IERC721, IERC721Metadata, I
     function _exists(uint256 tokenId) internal view virtual returns (bool) {
         return _tokenOwners.contains(tokenId);
     }
-
 }

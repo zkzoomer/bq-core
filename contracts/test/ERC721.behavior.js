@@ -1,6 +1,7 @@
 const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 const poseidon = require("./utils/poseidon.js");
+const poseidonMerkle = require('./utils/poseidonMerkle.js');
 const keccak256 = require('keccak256')
 const { ZERO_ADDRESS } = constants;
 
@@ -27,9 +28,19 @@ const answerHashesA = [
     poseidon([BigInt('0x' + keccak256('feed').toString('hex'))]),
     poseidon([BigInt('0x' + keccak256('seed').toString('hex'))])
 ]
-const answerHashesB = new Array(50).fill(
+const answerHashesB = new Array(64).fill(
     poseidon([BigInt('0x' + keccak256("deenz").toString('hex'))])
 );
+
+const _answerHashesA = Array(64).fill(
+  poseidon([BigInt('0x' + keccak256("").toString('hex'))])
+);
+_answerHashesA[0] = poseidon([BigInt('0x' + keccak256("sneed's").toString('hex'))])
+_answerHashesA[1] = poseidon([BigInt('0x' + keccak256('feed').toString('hex'))])
+_answerHashesA[2] = poseidon([BigInt('0x' + keccak256('seed').toString('hex'))])
+
+const answerHashesA_root = poseidonMerkle.rootFromLeafArray(_answerHashesA)
+const answerHashesB_root = poseidonMerkle.rootFromLeafArray(answerHashesB)
 
 // Multiple choice tests
 const multipleProofA = require("./proof/multiple/multipleProofA.json")
@@ -68,32 +79,30 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
 
   context('with minted tokens', function () {
     beforeEach(async function () {
-      await this.testCreator.createMultipleChoiceTest(
-        credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        0, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
-      await this.testCreator.createMultipleChoiceTest(
-        credentialLimit, timeLimit, requiredPass, solutionHashB, credentialsGained, testURI, 
+      await this.testCreator.createTest(
+        0, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
-      await this.testCreator.createOpenAnswerTest(
-        credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
-      await this.testCreator.createOpenAnswerTest(
-        credentialLimit, timeLimit, requiredPass, answerHashesB, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
-      await this.testCreator.createMixedTest(
-        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
-      await this.testCreator.createMixedTest(
-        credentialLimit, timeLimit, requiredPass, solutionHashB, answerHashesB, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        2, credentialLimit, timeLimit, [solutionHashB, answerHashesB_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
-
-      const _hashes = await this.testCreator.getOpenAnswerTest('5')
 
       // Solving these tests
       await solveTest(this.testCreator, '1', multipleProofA, multiplePublicA)
@@ -236,28 +245,28 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
 
   context('with minted tokens', function () {
     beforeEach(async function () {
-      await this.testCreator.createMultipleChoiceTest(
-        credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        0, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
-      await this.testCreator.createMultipleChoiceTest(
-        credentialLimit, timeLimit, requiredPass, solutionHashB, credentialsGained, testURI, 
+      await this.testCreator.createTest(
+        0, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
-      await this.testCreator.createOpenAnswerTest(
-        credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
-      await this.testCreator.createOpenAnswerTest(
-        credentialLimit, timeLimit, requiredPass, answerHashesB, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
-      await this.testCreator.createMixedTest(
-        credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
-      await this.testCreator.createMixedTest(
-        credentialLimit, timeLimit, requiredPass, solutionHashB, answerHashesB, credentialsGained, testURI,
+      await this.testCreator.createTest(
+        2, credentialLimit, timeLimit, [solutionHashB, answerHashesB_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
 
@@ -338,16 +347,16 @@ function shouldBehaveLikeERC721Metadata (errorPrefix, name, symbol, owner) {
 
     describe('token URI', function () {
       beforeEach(async function () {
-        await this.testCreator.createMultipleChoiceTest(
-          credentialLimit, timeLimit, requiredPass, solutionHashA, credentialsGained, testURI,
-          { from: owner, value: prize }
-        );
-        await this.testCreator.createOpenAnswerTest(
-          credentialLimit, timeLimit, requiredPass, answerHashesA, credentialsGained, testURI,
+        await this.testCreator.createTest(
+          0, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
           { from: owner, value: prize }
         )
-        await this.testCreator.createMixedTest(
-          credentialLimit, timeLimit, requiredPass, solutionHashA, answerHashesA, credentialsGained, testURI,
+        await this.testCreator.createTest(
+          1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+          { from: owner, value: prize }
+        )
+        await this.testCreator.createTest(
+          2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
           { from: owner, value: prize }
         )
       });

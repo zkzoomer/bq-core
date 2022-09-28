@@ -1,5 +1,4 @@
 const { ethers, artifacts } = require("hardhat");
-const { poseidonContract } =  require("circomlibjs");
 const {
     shouldBehaveLikeERC721,
     shouldBehaveLikeERC721Metadata,
@@ -9,7 +8,6 @@ const { shouldBehaveLikeCredentials } = require('./credentials.behavior')
 
 const testCreator = artifacts.require('TestCreator')
 const Credentials = artifacts.require('Credentials')
-let poseidon
 
 contract('Credentials', function (accounts) {
     const name = "Block Qualified Credentials"
@@ -20,14 +18,7 @@ contract('Credentials', function (accounts) {
     beforeEach(async function () {
         [account] = await ethers.getSigners();
 
-        const P2 = new ethers.ContractFactory(
-            poseidonContract.generateABI(2),
-            poseidonContract.createCode(2),
-            account
-        )
-
-        poseidon = await P2.deploy()
-        this.testCreator = await testCreator.new(poseidon.address)
+        this.testCreator = await testCreator.new()
         const _credentials = await this.testCreator.credentialsContract()
         /* this.credentials = (new ethers.Contract(_credentials, credentialsAbi)).deployed() */
         this.credentials = await Credentials.at(_credentials)
