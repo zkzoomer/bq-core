@@ -93,6 +93,19 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
 
     context('without created tests', function () {
         describe('createtest', function () {
+            context('when the test type specified is not supported', function () {
+                it('reverts', async function () {
+                    await expectRevert(
+                        this.testCreator.createTest(
+                            3, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                            { from: owner, value: prize }
+                        )
+                        ,
+                        "Invalid test type"
+                    )
+                })
+            })
+
             context('when the time limit is less than the current time', function () {
                 it('reverts', async function () {
                     const pastTime = Math.floor(Date.now() / 1000) - 10;

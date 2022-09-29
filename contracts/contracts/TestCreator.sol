@@ -66,13 +66,9 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         string credentialsGained;
     }
 
-    struct MixedTest {
-        uint256 solutionHash;
-        mapping(uint256 => uint256[]) answerHashes;
-    }
-
     // Mapping defining each test
     mapping(uint256 => Test) private _tests;
+    
     // Mapping with the necessary info for the different kinds of tests
     mapping(uint256 => uint256) private _multipleChoiceTests;  // Solution hashes of each
     mapping(uint256 => uint256) private _answerHashesRoot;  // Merkle root of the answer hashes tree
@@ -168,7 +164,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             _multipleChoiceTests[_testId] = _solvingHashes[0];
         } else if (_testType == 1) {  // Open answers test, providing the [answerHashesRoot]
             _answerHashesRoot[_testId] = _solvingHashes[0];
-        } else if (_testType == 2) {  // Mixed test, providing [solutionHash, answerHashesRoot
+        } else if (_testType == 2) {  // Mixed test, providing [solutionHash, answerHashesRoot]
             _multipleChoiceTests[_testId] = _solvingHashes[0];
             _answerHashesRoot[_testId] = _solvingHashes[1];
         } else {
@@ -282,7 +278,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             
             require(!usedSalts[input[1]], "Salt was already used");
 
-            _validateTest(testId, _test);
+            _validateSolving(testId, _test);
         
             // Verify solution and get result
             require(verifierContract.verifyMultipleProof(a, b, c, input), "Invalid proof");
@@ -297,7 +293,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(input.length == 3, "Invalid input length");
             require(!usedSalts[input[2]], "Salt was already used");
             
-            _validateTest(testId, _test);
+            _validateSolving(testId, _test);
 
             // Ensuring the open answer test being solved is the one selected
             require(input[1] == _answerHashesRoot[testId], "Solving for another test");
@@ -314,7 +310,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(input.length == 5, "Invalid input length");
             require(!usedSalts[input[3]] && !usedSalts[input[4]], "Salt was already used");
 
-            _validateTest(testId, _test);
+            _validateSolving(testId, _test);
 
             // Ensuring the open answer test being solved is the one selected
             require(input[2] == _answerHashesRoot[testId], "Solving for another test");
@@ -345,7 +341,10 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         // to no loss and the only gain of increasing entropy
     }
 
-    function _validateTest(uint256 testId, Test memory _test) internal view {
+    /**
+     * @dev Verifies that the test can be solved by msg.sender
+     */
+    function _validateSolving(uint256 testId, Test memory _test) internal view {
         require(msg.sender != ownerOf(testId), "Test cannot be solved by owner");
         require(_test.credentialLimit == 0 || _test.solvers < _test.credentialLimit, "Maximum number of credentials reached");
         require(block.timestamp <= _test.timeLimit, "Time limit for this credential reached");
