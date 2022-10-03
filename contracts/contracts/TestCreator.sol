@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.7;
 
 import "./Credentials.sol";
 import "./TestVerifier.sol";
@@ -58,6 +58,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
 
     struct Test {
         uint8 testType;
+        uint8 nQuestions;  // number of open answer questions the test has
+        uint8 minimumGrade;  // out of 100, minimum mark the user must get to obtain the credential
         uint24 solvers;
         uint24 credentialLimit;
         uint32 timeLimit;
@@ -139,9 +141,13 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
 
     /**
      * @dev Creates a new multiple choice/open answer/mixed test, storing the defining hashes on chain
+     *
+     * We assume the credential issuer will provide a solvable test and specify the actual number of questions it has
      */
     function createTest(
         uint8 _testType,
+        uint8 _nQuestions,
+        uint8 _minimumGrade,
         uint24 _credentialLimit,
         uint32 _timeLimit,
         uint256[] calldata _solvingHashes,
@@ -158,15 +164,18 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         if(_requiredPass != address(0)) {
             require(RequiredPass(_requiredPass).balanceOf(msg.sender) >= 0);  // dev: invalid required pass address provided
         }
+        require(_nQuestions >= 1 && _nQuestions <= 64, "Invalid number of questions");
+        require(_minimumGrade > 0 && _minimumGrade <= 100, "Invalid minimum grade");
 
         // Storing the necessary information
-        if (_testType == 0) {  // Multiple choice test, providing the [solutionHash]
-            _multipleChoiceTests[_testId] = _solvingHashes[0];
-        } else if (_testType == 1) {  // Open answers test, providing the [answerHashesRoot]
-            _answerHashesRoot[_testId] = _solvingHashes[0];
-        } else if (_testType == 2) {  // Mixed test, providing [solutionHash, answerHashesRoot]
+        if (_testType > 0 && _testType < 100) {  /// Mixed test, providing [solutionHash, answerHashesRoot]
             _multipleChoiceTests[_testId] = _solvingHashes[0];
             _answerHashesRoot[_testId] = _solvingHashes[1];
+        } else if (_testType >= 100 && _testType < 200) {  // Open answers test, providing the [answerHashesRoot]
+            _answerHashesRoot[_testId] = _solvingHashes[0];
+        } else if (_testType >= 200) {  // Multiple choice test, providing the [solutionHash]
+            require(_minimumGrade == 100, "Multiple choice test must have 100 as minimum grade");
+            _multipleChoiceTests[_testId] = _solvingHashes[0];
         } else {
             revert("Invalid test type");
         }
@@ -177,6 +186,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         // Defining the test object for this testId
         _tests[_testId] = Test(
             _testType,          // testType
+            _nQuestions,        // nQuestions
+            _minimumGrade,
             0,                  // solvers
             _credentialLimit,   // credentialLimit
             _timeLimit,         // timeLimit
@@ -206,7 +217,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     function getMultipleChoiceTest(uint256 testId) external view returns (uint256) {
         require(_exists(testId), "Test does not exist");
         uint8 _testType = _tests[testId].testType;
-        require(_testType == 0 || _testType == 2, "Test is not multiple choice or mixed");
+        require(_testType < 100 || _testType >= 200, "Test is not multiple choice or mixed");
         return _multipleChoiceTests[testId];
     }
 
@@ -217,7 +228,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     function getAnswerHashesRoot(uint256 testId) external view returns (uint256) {
         require(_exists(testId), "Test does not exist");
         uint8 _testType = _tests[testId].testType;
-        require(_testType == 1 || _testType == 2, "Test is not open answer or mixed");
+        require(_testType < 200, "Test is not open answer or mixed");
         return _answerHashesRoot[testId];
     }
 
@@ -242,12 +253,12 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      */
     function invalidateTest(uint256 testId) external nonReentrant {
         require(_exists(testId), "Test does not exist");
-        require(_tests[testId].testType < 200, "Test was already invalidated");
+        require(_tests[testId].testType != 0, "Test was already invalidated");
         require(ownerOf(testId) == msg.sender, "Deleting test that is not own");
 
-        // Test still lives on chain for reference, but can no longer be solved
-        // Invalid tests are identified by a testType >= 200
-        _tests[testId].testType += 200;
+        // Test still lives on chain for reference, but can no longer be solved.
+        // Invalid tests are identified by a testType = 0.
+        _tests[testId].testType = 0;
 
         // Returns the funds to the owner if the test was never solved
         if (_tests[testId].solvers == 0) {
@@ -265,15 +276,50 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
-        uint[] calldata input  // 0: [solutionHash, salt], 1: [results, answerHashesRoot, salt], 2: [solutionHash, results, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
+        uint[] calldata input  // multiple: [solutionHash, salt], open: [results, answerHashesRoot, salt], mixed: [solutionHash, results, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
     ) external nonReentrant {
         require(_exists(testId), "Solving test that does not exist");
 
         Test memory _test = _tests[testId];
         uint8 testType = _test.testType;
         uint256 result;
-        if ( testType == 0 ) {  // Multiple choice test
 
+        if ( testType > 0 && testType < 100 ) {  // Mixed test
+            require(input.length == 5, "Invalid input length");
+            require(!usedSalts[input[3]] && !usedSalts[input[4]], "Salt was already used");
+
+            _validateSolving(testId, _test);
+
+            // Ensuring the open answer test being solved is the one selected
+            require(input[2] == _answerHashesRoot[testId], "Solving for another test");
+
+            // Verify solution and get result
+            require(verifierContract.verifyMixedProof(a, b, c, input), "Invalid proof");
+
+            // The testType being below 100 means it is a mixed test, and its value represents the weight of the multiple choice test
+            result = (input[0] == 
+                _multipleChoiceTests[testId] ? testType : 0) + 
+                ((100 * (input[1] + _test.nQuestions - 64)) / _test.nQuestions) * (100 - testType) / 100;
+            require(result >= _test.minimumGrade, "Grade is below minimum");
+
+            usedSalts[input[3]] = true;
+            usedSalts[input[4]] = true;
+        } else if ( testType >= 100 && testType < 200 ) {  // Open answers test, providing the [answerHashesRoot]
+            require(input.length == 3, "Invalid input length");
+            require(!usedSalts[input[2]], "Salt was already used");
+            
+            _validateSolving(testId, _test);
+
+            // Ensuring the open answer test being solved is the one selected
+            require(input[1] == _answerHashesRoot[testId], "Solving for another test");
+
+            // Verify solution and get result
+            require(verifierContract.verifyOpenProof(a, b, c, input), "Invalid proof");
+            result = (100 * (input[0] + _test.nQuestions - 64)) / _test.nQuestions;
+            require(result >= _test.minimumGrade, "Grade is below minimum");
+
+            usedSalts[input[2]] = true;
+        } else if ( testType >= 200 ) {  // Multiple choice test, providing the [solutionHash]
             require(input.length == 2, "Invalid input length");
             
             require(!usedSalts[input[1]], "Salt was already used");
@@ -287,42 +333,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(input[0] == _multipleChoiceTests[testId], "Wrong solution");
 
             usedSalts[input[1]] = true;
-            
-        } else if ( testType == 1 ) {  // Open answer test
-
-            require(input.length == 3, "Invalid input length");
-            require(!usedSalts[input[2]], "Salt was already used");
-            
-            _validateSolving(testId, _test);
-
-            // Ensuring the open answer test being solved is the one selected
-            require(input[1] == _answerHashesRoot[testId], "Solving for another test");
-
-            // Verify solution and get result
-            require(verifierContract.verifyOpenProof(a, b, c, input), "Invalid proof");
-            require(input[0] > 0, "No correct answers");
-            result = input[0];
-
-            usedSalts[input[2]] = true;
-
-        } else if ( testType == 2 ) {  // Mixed test
-
-            require(input.length == 5, "Invalid input length");
-            require(!usedSalts[input[3]] && !usedSalts[input[4]], "Salt was already used");
-
-            _validateSolving(testId, _test);
-
-            // Ensuring the open answer test being solved is the one selected
-            require(input[2] == _answerHashesRoot[testId], "Solving for another test");
-
-            // Verify solution and get result
-            require(verifierContract.verifyMixedProof(a, b, c, input), "Invalid proof");
-            result = (input[0] == _multipleChoiceTests[testId] ? 100 : 0) + input[1];
-            require(result > 0, "Wrong solution and no correct answers"); 
-
-            usedSalts[input[3]] = true;
-            usedSalts[input[4]] = true;
-        } else if ( testType >= 200 ) {
+        } else if ( testType == 0 ) {
             revert("Test has been deleted and can no longer be solved");
         } 
 

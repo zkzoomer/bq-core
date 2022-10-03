@@ -97,7 +97,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 it('reverts', async function () {
                     await expectRevert(
                         this.testCreator.createTest(
-                            3, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                            0, 63, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -111,7 +111,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     const pastTime = Math.floor(Date.now() / 1000) - 10;
                     await expectRevert(
                         this.testCreator.createTest(
-                            0, credentialLimit, pastTime, [solutionHashA], requiredPass, credentialsGained, testURI,
+                            200, 64, 100, credentialLimit, pastTime, [solutionHashA], requiredPass, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -119,7 +119,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     )
                     await expectRevert(
                         this.testCreator.createTest(
-                            1, credentialLimit, pastTime, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                            100, 3, 1, credentialLimit, pastTime, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -127,7 +127,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     )
                     await expectRevert(
                         this.testCreator.createTest(
-                            2, credentialLimit, pastTime, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                            250, 3, 1, credentialLimit, pastTime, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -140,7 +140,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 it('reverts', async function () {
                     await expectRevert(
                         this.testCreator.createTest(
-                            0, 0, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                            200, 64, 100, 0, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -148,7 +148,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     )
                     await expectRevert(
                         this.testCreator.createTest(
-                            1, 0, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                            100, 3, 1, 0, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -156,7 +156,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     )
                     await expectRevert(
                         this.testCreator.createTest(
-                            2, 0, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                            50, 3, 1, 0, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                         ,
@@ -169,19 +169,19 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 it('reverts', async function () {
                     await expectRevert.unspecified(
                         this.testCreator.createTest(
-                            0, credentialLimit, timeLimit, [solutionHashA], this.malicious.address, credentialsGained, testURI,
+                            200, 64, 100, credentialLimit, timeLimit, [solutionHashA], this.malicious.address, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                     )
                     await expectRevert.unspecified(
                         this.testCreator.createTest(
-                            1, credentialLimit, timeLimit, [answerHashesA_root], this.malicious.address, credentialsGained, testURI,
+                            100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], this.malicious.address, credentialsGained, testURI,
                             { from: owner, value: prize }
                           )
                     )
                     await expectRevert.unspecified(
                         this.testCreator.createTest(
-                            2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], this.malicious.address, credentialsGained, testURI,
+                            50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], this.malicious.address, credentialsGained, testURI,
                             { from: owner, value: prize }
                         )
                     )
@@ -192,15 +192,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 it('mints a new test', async function () {
                     // tx clears
                     await this.testCreator.createTest(
-                        0, credentialLimit, timeLimit, [solutionHashA], this.valid.address, credentialsGained, testURI,
+                        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], this.valid.address, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        1, credentialLimit, timeLimit, [answerHashesA_root], this.valid.address, credentialsGained, testURI,
+                        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], this.valid.address, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], this.valid.address, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], this.valid.address, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
@@ -211,15 +211,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
 
                 beforeEach(async function () {
                     tx1 = await this.testCreator.createTest(
-                        0, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     tx2 = await this.testCreator.createTest(
-                        1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     tx3 = await this.testCreator.createTest(
-                        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
@@ -243,15 +243,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
             context('after minting a given testId', function () {
                 beforeEach(async function () {
                     await this.testCreator.createTest(
-                        0, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
@@ -271,27 +271,27 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
     context('with created tests', function () {
         beforeEach(async function () {
             await this.testCreator.createTest(
-                0, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                 { from: owner, value: prize }
             );
             await this.testCreator.createTest(
-                0, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
+                200, 64, 100, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
                 { from: owner, value: prize }
             );
             await this.testCreator.createTest(
-                1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                 { from: owner, value: prize }
             )
             await this.testCreator.createTest(
-                1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGained, testURI,
+                100, 64, 1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGained, testURI,
                 { from: owner, value: prize }
             )
             await this.testCreator.createTest(
-                2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                 { from: owner, value: prize }
             )
             await this.testCreator.createTest(
-                2, credentialLimit, timeLimit, [solutionHashB, answerHashesB_root], requiredPass, credentialsGained, testURI,
+                50, 64, 1, credentialLimit, timeLimit, [solutionHashB, answerHashesB_root], requiredPass, credentialsGained, testURI,
                 { from: owner, value: prize }
             )
         })
@@ -321,11 +321,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
 
                 this.beforeEach(async function () {
                     await this.testCreator.createTest(
-                        0, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     );
                     await this.testCreator.createTest(
-                        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     ) 
                 })
@@ -365,11 +365,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
 
                 this.beforeEach(async function () {
                     await this.testCreator.createTest(
-                        1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
@@ -398,9 +398,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
             context('after minting a given testId', function () {
 
                 it('returns the given on chain test for this testId', async function () {
-                    expect((await this.testCreator.getTest('1')).slice(0,7).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('1')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
-                            '0',
+                            '200',
+                            '64',
+                            '100',
                             '0',
                             credentialLimit,
                             timeLimit,
@@ -408,8 +410,10 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                             prize,
                             credentialsGained
                     ])
-                    expect((await this.testCreator.getTest('3')).slice(0,7).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('3')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
+                            '100',
+                            '3',
                             '1',
                             '0',
                             credentialLimit,
@@ -418,9 +422,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                             prize,
                             credentialsGained
                     ])
-                    expect((await this.testCreator.getTest('5')).slice(0,8).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('5')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
-                            '2',
+                            '50',
+                            '3',
+                            '1',
                             '0',
                             credentialLimit,
                             timeLimit,
@@ -474,9 +480,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 })
 
                 it('reflects the invalidation in the on chain test object', async function () {
-                    expect((await this.testCreator.getTest('1')).slice(0,7).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('1')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
-                            '200',
+                            '0',
+                            '64',
+                            '100',
                             '0',
                             credentialLimit,
                             timeLimit,
@@ -484,9 +492,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                             prize,
                             credentialsGained
                         ])
-                    expect((await this.testCreator.getTest('3')).slice(0,7).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('3')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
-                            '201',
+                            '0',
+                            '3',
+                            '1',
                             '0',
                             credentialLimit,
                             timeLimit,
@@ -494,9 +504,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                             prize,
                             credentialsGained
                         ])
-                    expect((await this.testCreator.getTest('5')).slice(0,8).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('5')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
-                            '202',
+                            '0',
+                            '3',
+                            '1',
                             '0',
                             credentialLimit,
                             timeLimit,
@@ -585,15 +597,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 
                 it('does not send any funds back if the test did not include a prize', async function () {
                     await this.testCreator.createTest(
-                        0, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                         { from: owner }
                     )
                     await this.testCreator.createTest(
-                        1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner }
                     )
                     await this.testCreator.createTest(
-                        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner }
                     )
 
@@ -722,15 +734,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
             context('when the number of credentials have been reached', function () {
                 beforeEach(async function () {
                     await this.testCreator.createTest(
-                        0, 1, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                        200, 64, 100, 1, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        1, 1, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        100, 3, 1, 1, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        2, 1, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        50, 3, 1, 1, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
 
@@ -765,15 +777,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     const nearTimeLimit = block['timestamp'] + 100;
                     
                     await this.testCreator.createTest(
-                        0, credentialLimit, nearTimeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                        200, 64, 100, credentialLimit, nearTimeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        1, credentialLimit, nearTimeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        100, 3, 1, credentialLimit, nearTimeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        2, credentialLimit, nearTimeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, nearTimeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     
@@ -961,15 +973,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
             context('when the caller does not own the required pass', function () {
                 beforeEach(async function () {
                     await this.testCreator.createTest(
-                        0, credentialLimit, timeLimit, [solutionHashA], this.valid.address, credentialsGained, testURI,
+                        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], this.valid.address, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        1, credentialLimit, timeLimit, [answerHashesA_root], this.valid.address, credentialsGained, testURI,
+                        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], this.valid.address, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], this.valid.address, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], this.valid.address, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                 })
@@ -996,15 +1008,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
             context('when the caller owns the required pass', function () {
                 beforeEach(async function () {
                     await this.testCreator.createTest(
-                        0, credentialLimit, timeLimit, [solutionHashA], this.valid.address, credentialsGained, testURI,
+                        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], this.valid.address, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        1, credentialLimit, timeLimit, [answerHashesA_root], this.valid.address, credentialsGained, testURI,
+                        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], this.valid.address, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
                     await this.testCreator.createTest(
-                        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], this.valid.address, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], this.valid.address, credentialsGained, testURI,
                         { from: owner, value: prize }
                     )
 
@@ -1050,9 +1062,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 })
 
                 it('updates the on chain test object', async function () {
-                    expect((await this.testCreator.getTest('1')).slice(0,7).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('1')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
-                            '0',
+                            '200',
+                            '64',
+                            '100',
                             '1',
                             credentialLimit,
                             timeLimit,
@@ -1060,8 +1074,10 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                             prize,
                             credentialsGained
                         ])
-                    expect((await this.testCreator.getTest('3')).slice(0,7).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('3')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
+                            '100',
+                            '3',
                             '1',
                             '1',
                             credentialLimit,
@@ -1070,9 +1086,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                             prize,
                             credentialsGained
                         ])
-                    expect((await this.testCreator.getTest('5')).slice(0,8).map(n => { return n.toString() }))
+                    expect((await this.testCreator.getTest('5')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
-                            '2',
+                            '50',
+                            '3',
+                            '1',
                             '1',
                             credentialLimit,
                             timeLimit,
@@ -1136,15 +1154,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 it('does not pay the solver if no prize was specified', async function () {
 
                     await this.testCreator.createTest(
-                        0, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+                        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                         { from: owner }
                     )
                     await this.testCreator.createTest(
-                        1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner }
                     )
                     await this.testCreator.createTest(
-                        2, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
+                        50, 3, 1, credentialLimit, timeLimit, [solutionHashA, answerHashesA_root], requiredPass, credentialsGained, testURI,
                         { from: owner }
                     )
 

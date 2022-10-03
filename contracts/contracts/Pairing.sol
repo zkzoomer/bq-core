@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 // Generated using circom - https://github.com/iden3/circom 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.7;
 
 library Pairing {
     struct G1Point {
