@@ -17,6 +17,8 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import "hardhat/console.sol";
+
 interface RequiredPass {
     function balanceOf(address _owner) external view returns (uint256);
 }
@@ -175,6 +177,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             _answerHashesRoot[_testId] = _solvingHashes[0];
         } else if (_testType >= 200) {  // Multiple choice test, providing the [solutionHash]
             require(_minimumGrade == 100, "Multiple choice test must have 100 as minimum grade");
+            require(_nQuestions == 1, "Multiple choice test must have 1 as number of open questions");
             _multipleChoiceTests[_testId] = _solvingHashes[0];
         } else {
             revert("Invalid test type");
@@ -297,13 +300,19 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(verifierContract.verifyMixedProof(a, b, c, input), "Invalid proof");
 
             // The testType being below 100 means it is a mixed test, and its value represents the weight of the multiple choice test
-            result = (input[0] == 
-                _multipleChoiceTests[testId] ? testType : 0) + 
-                ((100 * (input[1] + _test.nQuestions - 64)) / _test.nQuestions) * (100 - testType) / 100;
+            result = (input[0] == _multipleChoiceTests[testId] ? testType : 0) 
+                + 
+                (
+                (input[1] + _test.nQuestions > 64) ?
+                    (input[1] + _test.nQuestions - 64) * (100 - testType) / _test.nQuestions
+                :
+                    0
+                );
             require(result >= _test.minimumGrade, "Grade is below minimum");
 
             usedSalts[input[3]] = true;
             usedSalts[input[4]] = true;
+
         } else if ( testType >= 100 && testType < 200 ) {  // Open answers test, providing the [answerHashesRoot]
             require(input.length == 3, "Invalid input length");
             require(!usedSalts[input[2]], "Salt was already used");
@@ -315,10 +324,14 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
 
             // Verify solution and get result
             require(verifierContract.verifyOpenProof(a, b, c, input), "Invalid proof");
-            result = (100 * (input[0] + _test.nQuestions - 64)) / _test.nQuestions;
+            result = (input[0] + _test.nQuestions > 64) ?  // prevent underflow
+                100 * (input[0] + _test.nQuestions - 64) / _test.nQuestions
+            :
+                0;
             require(result >= _test.minimumGrade, "Grade is below minimum");
 
             usedSalts[input[2]] = true;
+
         } else if ( testType >= 200 ) {  // Multiple choice test, providing the [solutionHash]
             require(input.length == 2, "Invalid input length");
             
@@ -333,6 +346,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(input[0] == _multipleChoiceTests[testId], "Wrong solution");
 
             usedSalts[input[1]] = true;
+
         } else if ( testType == 0 ) {
             revert("Test has been deleted and can no longer be solved");
         } 

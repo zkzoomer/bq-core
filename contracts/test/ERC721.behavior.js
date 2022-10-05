@@ -80,11 +80,11 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
   context('with minted tokens', function () {
     beforeEach(async function () {
       await this.testCreator.createTest(
-        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+        200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
       await this.testCreator.createTest(
-        200, 64, 100, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
+        200, 1, 100, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
       await this.testCreator.createTest(
@@ -246,11 +246,11 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
   context('with minted tokens', function () {
     beforeEach(async function () {
       await this.testCreator.createTest(
-        200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+        200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
       await this.testCreator.createTest(
-        200, 64, 100, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
+        200, 1, 100, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
       await this.testCreator.createTest(
@@ -348,7 +348,7 @@ function shouldBehaveLikeERC721Metadata (errorPrefix, name, symbol, owner) {
     describe('token URI', function () {
       beforeEach(async function () {
         await this.testCreator.createTest(
-          200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+          200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
           { from: owner, value: prize }
         )
         await this.testCreator.createTest(

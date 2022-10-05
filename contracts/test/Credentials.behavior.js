@@ -77,7 +77,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
     context('with solved tests', function () {
         beforeEach(async function () {
             await this.testCreator.createTest(
-                200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
+                200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
                 { from: owner, value: prize }
             )
             await this.testCreator.createTest(
@@ -200,7 +200,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
         describe('getCredentialType', function () {
             beforeEach(async function () {
                 await this.testCreator.createTest(
-                    200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
+                    200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
                     { from: owner, value: prize }
                 )
                 await this.testCreator.createTest(
@@ -238,7 +238,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
         describe('getResults', function () {
             beforeEach(async function () {
                 await this.testCreator.createTest(
-                    200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
+                    200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
                     { from: owner, value: prize }
                 );
                 await this.testCreator.createTest(
@@ -385,7 +385,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
     context('with invalidated tests', function () {
         beforeEach(async function () {
             await this.testCreator.createTest(
-                200, 64, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
+                200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
                 { from: owner, value: prize }
             )
             await this.testCreator.createTest(
