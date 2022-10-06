@@ -77,11 +77,11 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
     context('with solved tests', function () {
         beforeEach(async function () {
             await this.testCreator.createTest(
-                200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
+                100, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
                 { from: owner, value: prize }
             )
             await this.testCreator.createTest(
-                100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGainedB, testURI,
+                0, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGainedB, testURI,
                 { from: owner, value: prize }
             )
             await this.testCreator.createTest(
@@ -200,11 +200,11 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
         describe('getCredentialType', function () {
             beforeEach(async function () {
                 await this.testCreator.createTest(
-                    200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
+                    100, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
                     { from: owner, value: prize }
                 )
                 await this.testCreator.createTest(
-                    100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGainedB, testURI,
+                    0, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGainedB, testURI,
                     { from: owner, value: prize }
                 )
                 await this.testCreator.createTest(
@@ -214,21 +214,21 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
             })
 
             context('when calling for a multiple choice test', function () {
-                it('returns 0', async function () {
+                it('returns 100', async function () {
                     expect(await this.credentials.getCredentialType('1'))
-                        .to.be.bignumber.equal('200')
-                })
-            })
-
-            context('when calling for a open answer test', function () {
-                it('returns 1', async function () {
-                    expect(await this.credentials.getCredentialType('2'))
                         .to.be.bignumber.equal('100')
                 })
             })
 
+            context('when calling for a open answer test', function () {
+                it('returns 0', async function () {
+                    expect(await this.credentials.getCredentialType('2'))
+                        .to.be.bignumber.equal('0')
+                })
+            })
+
             context('when calling for a mixed test', function () {
-                it('returns 2', async function () {
+                it('returns the value of the multiple choice test within', async function () {
                     expect(await this.credentials.getCredentialType('3'))
                         .to.be.bignumber.equal('50')
                 })
@@ -238,11 +238,11 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
         describe('getResults', function () {
             beforeEach(async function () {
                 await this.testCreator.createTest(
-                    200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
+                    100, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
                     { from: owner, value: prize }
                 );
                 await this.testCreator.createTest(
-                    100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGainedB, testURI,
+                    0, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGainedB, testURI,
                     { from: owner, value: prize }
                 )
                 await this.testCreator.createTest(
@@ -250,7 +250,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                     { from: owner, value: prize }
                 )
                 await this.testCreator.createTest(
-                    100, 64, 1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGainedB, testURI,
+                    0, 64, 1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGainedB, testURI,
                     { from: owner, value: prize }
                 )
                 await this.testCreator.createTest(
@@ -385,11 +385,11 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
     context('with invalidated tests', function () {
         beforeEach(async function () {
             await this.testCreator.createTest(
-                200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
+                100, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGainedA, testURI,
                 { from: owner, value: prize }
             )
             await this.testCreator.createTest(
-                100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGainedB, testURI,
+                0, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGainedB, testURI,
                 { from: owner, value: prize }
             )
             await this.testCreator.createTest(

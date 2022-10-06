@@ -225,7 +225,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      *
      * Only present to be ERC-721 compliant. Credentials cannot be transferred, and as such cannot be approved for spending.
      */
-    function approve(address /* _approved */, uint256 /* _tokenId */) public view virtual override {
+    function approve(address /* _approved */, uint256 /* _testId */) public view virtual override {
         revert(approveRevertMessage);
     }
 
@@ -234,7 +234,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      *
      * Only present to be ERC-721 compliant. Credentials cannot be transferred, and as such are never approved for spending.
      */
-    function getApproved(uint256 /* tokenId */) public view virtual override returns (address) {
+    function getApproved(uint256 /* testId */) public view virtual override returns (address) {
         return address(0);
     }
 
@@ -261,7 +261,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      *
      * Only present to be ERC721 compliant. Credentials cannot be transferred.
      */
-    function transferFrom(address /* from */, address /* to */, uint256 /* tokenId */) public view virtual override {
+    function transferFrom(address /* from */, address /* to */, uint256 /* testId */) public view virtual override {
         revert(transferRevertMessage);
     }
 
@@ -270,8 +270,8 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      *
      * Only present to be ERC721 compliant. Credentials cannot be transferred.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override {
-        safeTransferFrom(from, to, tokenId, "");
+    function safeTransferFrom(address from, address to, uint256 testId) public virtual override {
+        safeTransferFrom(from, to, testId, "");
     }
 
     /**
@@ -279,7 +279,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      *
      * Only present to be ERC721 compliant. Credentials cannot be transferred.
      */
-    function safeTransferFrom(address /* from */, address /* to */, uint256 /* tokenId */, bytes memory /* _data */) public view virtual override {
+    function safeTransferFrom(address /* from */, address /* to */, uint256 /* testId */, bytes memory /* _data */) public view virtual override {
         revert(transferRevertMessage);
     }
     

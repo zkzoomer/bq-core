@@ -17,8 +17,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import "hardhat/console.sol";
-
 interface RequiredPass {
     function balanceOf(address _owner) external view returns (uint256);
 }
@@ -74,8 +72,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     mapping(uint256 => Test) private _tests;
     
     // Mapping with the necessary info for the different kinds of tests
-    mapping(uint256 => uint256) private _multipleChoiceTests;  // Solution hashes of each
-    mapping(uint256 => uint256) private _answerHashesRoot;  // Merkle root of the answer hashes tree
+    mapping(uint256 => uint256) private _multipleChoiceRoot;  // Solution hashes of each
+    mapping(uint256 => uint256) private _openAnswersRoot;  // Merkle root of the answer hashes tree
 
     // Mapping for token URIs
     mapping (uint256 => string) private _tokenURIs;  // URL containing the multiple choice test for each test
@@ -168,17 +166,17 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         }
         require(_nQuestions >= 1 && _nQuestions <= 64, "Invalid number of questions");
         require(_minimumGrade > 0 && _minimumGrade <= 100, "Invalid minimum grade");
-
-        // Storing the necessary information
-        if (_testType > 0 && _testType < 100) {  /// Mixed test, providing [solutionHash, answerHashesRoot]
-            _multipleChoiceTests[_testId] = _solvingHashes[0];
-            _answerHashesRoot[_testId] = _solvingHashes[1];
-        } else if (_testType >= 100 && _testType < 200) {  // Open answers test, providing the [answerHashesRoot]
-            _answerHashesRoot[_testId] = _solvingHashes[0];
-        } else if (_testType >= 200) {  // Multiple choice test, providing the [solutionHash]
+        
+        // Storing the test type information
+        if (_testType == 0) {  // Open answers test, providing the [answerHashesRoot]
+            _openAnswersRoot[_testId] = _solvingHashes[0];
+        } else if (_testType > 0 && _testType < 100) {  /// Mixed test, providing [solutionHash, answerHashesRoot]
+            _multipleChoiceRoot[_testId] = _solvingHashes[0];
+            _openAnswersRoot[_testId] = _solvingHashes[1];
+        } else if (_testType == 100) {  // Multiple choice test, providing the [solutionHash]
             require(_minimumGrade == 100, "Multiple choice test must have 100 as minimum grade");
             require(_nQuestions == 1, "Multiple choice test must have 1 as number of open questions");
-            _multipleChoiceTests[_testId] = _solvingHashes[0];
+            _multipleChoiceRoot[_testId] = _solvingHashes[0];
         } else {
             revert("Invalid test type");
         }
@@ -217,22 +215,22 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * @dev Returns the solution hash that defines a multiple choice test
      * Also used with mixed tests
      */
-    function getMultipleChoiceTest(uint256 testId) external view returns (uint256) {
+    function getMultipleChoiceRoot(uint256 testId) external view returns (uint256) {
         require(_exists(testId), "Test does not exist");
         uint8 _testType = _tests[testId].testType;
-        require(_testType < 100 || _testType >= 200, "Test is not multiple choice or mixed");
-        return _multipleChoiceTests[testId];
+        require(_testType > 0 && _testType <= 100, "Test is not multiple choice or mixed");
+        return _multipleChoiceRoot[testId];
     }
 
     /**
      * @dev Returns the list of solution hashes that define an open answer test
      * Also used with mixed tests
      */
-    function getAnswerHashesRoot(uint256 testId) external view returns (uint256) {
+    function getOpenAnswersRoot(uint256 testId) external view returns (uint256) {
         require(_exists(testId), "Test does not exist");
         uint8 _testType = _tests[testId].testType;
-        require(_testType < 200, "Test is not open answer or mixed");
-        return _answerHashesRoot[testId];
+        require(_testType < 100, "Test is not open answer or mixed");
+        return _openAnswersRoot[testId];
     }
 
     /**
@@ -256,12 +254,12 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      */
     function invalidateTest(uint256 testId) external nonReentrant {
         require(_exists(testId), "Test does not exist");
-        require(_tests[testId].testType != 0, "Test was already invalidated");
-        require(ownerOf(testId) == msg.sender, "Deleting test that is not own");
+        require(_tests[testId].testType != 255, "Test was already invalidated");
+        require(ownerOf(testId) == msg.sender, "Invalidating test that is not own");
 
         // Test still lives on chain for reference, but can no longer be solved.
         // Invalid tests are identified by a testType = 0.
-        _tests[testId].testType = 0;
+        _tests[testId].testType = 255;
 
         // Returns the funds to the owner if the test was never solved
         if (_tests[testId].solvers == 0) {
@@ -287,20 +285,39 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint8 testType = _test.testType;
         uint256 result;
 
-        if ( testType > 0 && testType < 100 ) {  // Mixed test
+        if ( testType == 0 ) {  // Open answers test, providing [results, answerHashesRoot, salt]
+            require(input.length == 3, "Invalid input length");
+            require(!usedSalts[input[2]], "Salt was already used");
+            
+            _validateSolving(testId, _test);
+
+            // Ensuring the open answer test being solved is the one selected
+            require(input[1] == _openAnswersRoot[testId], "Solving for another test");
+
+            // Verify solution and get result
+            require(verifierContract.verifyOpenProof(a, b, c, input), "Invalid proof");
+            result = (input[0] + _test.nQuestions > 64) ?  // prevent underflow
+                100 * (input[0] + _test.nQuestions - 64) / _test.nQuestions
+            :
+                0;
+            require(result >= _test.minimumGrade, "Grade is below minimum");
+
+            usedSalts[input[2]] = true;
+
+        } else if ( testType > 0 && testType < 100 ) {  // Mixed test, providing [solutionHash, results, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
             require(input.length == 5, "Invalid input length");
             require(!usedSalts[input[3]] && !usedSalts[input[4]], "Salt was already used");
 
             _validateSolving(testId, _test);
 
             // Ensuring the open answer test being solved is the one selected
-            require(input[2] == _answerHashesRoot[testId], "Solving for another test");
+            require(input[2] == _openAnswersRoot[testId], "Solving for another test");
 
             // Verify solution and get result
             require(verifierContract.verifyMixedProof(a, b, c, input), "Invalid proof");
 
             // The testType being below 100 means it is a mixed test, and its value represents the weight of the multiple choice test
-            result = (input[0] == _multipleChoiceTests[testId] ? testType : 0) 
+            result = (input[0] == _multipleChoiceRoot[testId] ? testType : 0) 
                 + 
                 (
                 (input[1] + _test.nQuestions > 64) ?
@@ -313,26 +330,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             usedSalts[input[3]] = true;
             usedSalts[input[4]] = true;
 
-        } else if ( testType >= 100 && testType < 200 ) {  // Open answers test, providing the [answerHashesRoot]
-            require(input.length == 3, "Invalid input length");
-            require(!usedSalts[input[2]], "Salt was already used");
-            
-            _validateSolving(testId, _test);
-
-            // Ensuring the open answer test being solved is the one selected
-            require(input[1] == _answerHashesRoot[testId], "Solving for another test");
-
-            // Verify solution and get result
-            require(verifierContract.verifyOpenProof(a, b, c, input), "Invalid proof");
-            result = (input[0] + _test.nQuestions > 64) ?  // prevent underflow
-                100 * (input[0] + _test.nQuestions - 64) / _test.nQuestions
-            :
-                0;
-            require(result >= _test.minimumGrade, "Grade is below minimum");
-
-            usedSalts[input[2]] = true;
-
-        } else if ( testType >= 200 ) {  // Multiple choice test, providing the [solutionHash]
+        } else if ( testType == 100 ) {  // Multiple choice test, providing [solutionHash, salt]
             require(input.length == 2, "Invalid input length");
             
             require(!usedSalts[input[1]], "Salt was already used");
@@ -343,11 +341,11 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(verifierContract.verifyMultipleProof(a, b, c, input), "Invalid proof");
             result = 100;
 
-            require(input[0] == _multipleChoiceTests[testId], "Wrong solution");
+            require(input[0] == _multipleChoiceRoot[testId], "Wrong solution");
 
             usedSalts[input[1]] = true;
 
-        } else if ( testType == 0 ) {
+        } else if ( testType == 255 ) {
             revert("Test has been deleted and can no longer be solved");
         } 
 
@@ -389,8 +387,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     /**
      * @dev See {IERC721-ownerOf}.
      */
-    function ownerOf(uint256 tokenId) public view virtual override returns (address) {
-        return _tokenOwners.get(tokenId, "ERC721: owner query for nonexistent token");
+    function ownerOf(uint256 testId) public view virtual override returns (address) {
+        return _tokenOwners.get(testId, "ERC721: owner query for nonexistent token");
     }
 
     /**
@@ -413,8 +411,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      */
     function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
         require(index < totalSupply(), "Index out of bounds");  
-        (uint256 tokenId, ) = _tokenOwners.at(index);
-        return tokenId;
+        (uint256 testId, ) = _tokenOwners.at(index);
+        return testId;
     }
 
     /**
@@ -422,7 +420,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      *
      * Only present to be ERC-721 compliant. tests cannot be transferred, and as such cannot be approved for spending.
      */
-    function approve(address /* _approved */, uint256 /* _tokenId */) public view virtual override {
+    function approve(address /* _approved */, uint256 /* _testId */) public view virtual override {
         revert(approveRevertMessage);
     }
 
@@ -431,7 +429,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      *
      * Only present to be ERC-721 compliant. tests cannot be transferred, and as such are never approved for spending.
      */
-    function getApproved(uint256 /* tokenId */) public view virtual override returns (address) {
+    function getApproved(uint256 /* testId */) public view virtual override returns (address) {
         return address(0);
     }
 
@@ -458,15 +456,15 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      *
      * Only present to be ERC721 compliant. tests cannot be transferred.
      */
-    function transferFrom(address /* from */, address /* to */, uint256 /* tokenId */) public view virtual override {
+    function transferFrom(address /* from */, address /* to */, uint256 /* testId */) public view virtual override {
         revert(transferRevertMessage);
     }
 
     /**
      * @dev See {IERC721-safeTransferFrom}.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override {
-        safeTransferFrom(from, to, tokenId, "");
+    function safeTransferFrom(address from, address to, uint256 testId) public virtual override {
+        safeTransferFrom(from, to, testId, "");
     }
 
     /**
@@ -474,17 +472,17 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      *
      * Only present to be ERC721 compliant. tests cannot be transferred.
      */
-    function safeTransferFrom(address /* from */, address /* to */, uint256 /* tokenId */, bytes memory /* _data */) public view virtual override {
+    function safeTransferFrom(address /* from */, address /* to */, uint256 /* testId */, bytes memory /* _data */) public view virtual override {
         revert(transferRevertMessage);
     }
 
     /**
-     * @dev Returns whether `tokenId` exists.
+     * @dev Returns whether `testId` exists.
      *
      * Tokens start existing when they are minted (`_mint`),
      * and stop existing when they are burned (`_burn`).
      */
-    function _exists(uint256 tokenId) internal view virtual returns (bool) {
-        return _tokenOwners.contains(tokenId);
+    function _exists(uint256 testId) internal view virtual returns (bool) {
+        return _tokenOwners.contains(testId);
     }
 }

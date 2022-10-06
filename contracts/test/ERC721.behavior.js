@@ -80,19 +80,19 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
   context('with minted tokens', function () {
     beforeEach(async function () {
       await this.testCreator.createTest(
-        200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+        100, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
       await this.testCreator.createTest(
-        200, 1, 100, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
+        100, 1, 100, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
       await this.testCreator.createTest(
-        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+        0, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
       await this.testCreator.createTest(
-        100, 64, 1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGained, testURI,
+        0, 64, 1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
       await this.testCreator.createTest(
@@ -246,19 +246,19 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
   context('with minted tokens', function () {
     beforeEach(async function () {
       await this.testCreator.createTest(
-        200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+        100, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
       await this.testCreator.createTest(
-        200, 1, 100, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
+        100, 1, 100, credentialLimit, timeLimit, [solutionHashB], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       );
       await this.testCreator.createTest(
-        100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+        0, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
       await this.testCreator.createTest(
-        100, 64, 1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGained, testURI,
+        0, 64, 1, credentialLimit, timeLimit, [answerHashesB_root], requiredPass, credentialsGained, testURI,
         { from: owner, value: prize }
       )
       await this.testCreator.createTest(
@@ -348,11 +348,11 @@ function shouldBehaveLikeERC721Metadata (errorPrefix, name, symbol, owner) {
     describe('token URI', function () {
       beforeEach(async function () {
         await this.testCreator.createTest(
-          200, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
+          100, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
           { from: owner, value: prize }
         )
         await this.testCreator.createTest(
-          100, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
+          0, 3, 1, credentialLimit, timeLimit, [answerHashesA_root], requiredPass, credentialsGained, testURI,
           { from: owner, value: prize }
         )
         await this.testCreator.createTest(
