@@ -75,7 +75,7 @@ Tests are solved by providing a zero-knowledge proof where the solver proves the
 
     By convention, the hash of a correct answer is defined as follows:
 
-    ```hash = Poseidon( keccack256( CORRECT_ANSWER ) )```
+    ```hash = Poseidon( keccak256( CORRECT_ANSWER ) )```
 
     As such, the solver's actual answers need to be hashed via *keccak256* before being sent as inputs to compute their proofs. Credential issuers may still choose to define the hash of a correct answer differently.
 
