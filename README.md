@@ -25,7 +25,7 @@ These values represent the following:
 - **testType**: The smart contract supports defining either a multiple choice test, an open answers test, or a mixture of both:
     - **Multiple choice test**: They can have a maximum of 64 questions, where solvers select their correct answers from the choices offered as a list (think A, B, C, D...). 
     
-        To define these, you specify a ***testType = 100***. You will also need to specify ***nQuestions = 1*** and ***minmumGrade = 100***. This is by convention, because the way these tests get solved is by providing a proof that you know all of the answers. The only way to gain this kind of credential is to ace the test.
+        To define these, you specify a ***testType = 100***. You will also need to specify ***nQuestions = 1*** and ***minimumGrade = 100***. This is by convention, because the way these tests get solved is by providing a proof that you know all of the answers. The only way to gain this kind of credential is to ace the test.
 
     - **Open answers test**: They can have a maximum of 64 questions, where solvers input their own full solution to each question. Note that possible answers do not have to be provided as a list, the solver is expected to provide a solution from just the question statement.
         
