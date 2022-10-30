@@ -21,7 +21,7 @@ interface RequiredPass {
     function balanceOf(address _owner) external view returns (uint256);
 }
 
-contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, ReentrancyGuard {
+contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, Ownable, ReentrancyGuard {
     using SafeMath for uint8;
     using SafeMath for uint32;
     using SafeMath for uint256;
@@ -64,7 +64,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint24 credentialLimit;
         uint32 timeLimit;
         address requiredPass;
-        uint256 prize;
+        uint256 gasFund;
         string credentialsGained;
     }
 
@@ -72,11 +72,12 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     mapping(uint256 => Test) private _tests;
     
     // Mapping with the necessary info for the different kinds of tests
-    mapping(uint256 => uint256) private _multipleChoiceRoot;  // Solution hashes of each
+    mapping(uint256 => uint256) private _multipleChoiceRoot;  // Merkle root of the multiple choice tree
     mapping(uint256 => uint256) private _openAnswersRoot;  // Merkle root of the answer hashes tree
+    mapping(uint256 => uint256[]) private _openAnswersHashes;  // Array containing the correct answer hashes for open answer tests
 
     // Mapping for token URIs
-    mapping (uint256 => string) private _tokenURIs;  // URL containing the multiple choice test for each test
+    mapping (uint256 => string) private _tokenURIs;  // URL containing the test
 
     // Salts that have been already used before for submitting solutions
     mapping (uint256 => bool) public usedSalts;
@@ -143,6 +144,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * @dev Creates a new multiple choice/open answer/mixed test, storing the defining hashes on chain
      *
      * We assume the credential issuer will provide a solvable test and specify the actual number of questions it has
+     * For the first iteration of the protocol, only the
      */
     function createTest(
         uint8 _testType,
@@ -154,7 +156,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         address _requiredPass,
         string memory _credentialsGained,
         string memory _testURI
-    ) external payable {
+    ) external payable onlyOwner {
         // Increase the number of tests available
         _ntests++;
         uint256 _testId = _ntests;
@@ -193,7 +195,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             _credentialLimit,   // credentialLimit
             _timeLimit,         // timeLimit
             _requiredPass,      // requiredPass
-            msg.value,          // prize
+            msg.value,          // gasFund
             _credentialsGained  // credentialsGained
         );
 
@@ -202,6 +204,21 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         _tokenOwners.set(_testId, msg.sender);
         emit Transfer(address(0), msg.sender, _testId);
     }
+
+    /**
+     * @dev Creates a new multiple choice/open answer/mixed test, storing the defining hashes on chain
+     *
+     * We assume the credential issuer will provide a solvable test and specify the actual number of questions it has
+     * For the first iteration of the protocol, only the
+     */
+    function verifyTestAnswers(uint256 testId, uint256[] memory answerHashes) external {
+        require(_exists(testId), "Test does not exist");
+        require(_openAnswersHashes[testId].length == 0, "Test was already verified");
+        require(ownerOf(testId) == msg.sender, "Verifying test that is not own");
+        require(verifierContract.verifyTestAnswers(answerHashes, _openAnswersRoot[testId]), "Answers provided do not verify test");
+
+        _openAnswersHashes[testId] = answerHashes;
+    } 
     
     /**
      * @dev Returns the struct that defines a Test
@@ -234,6 +251,17 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     }
 
     /**
+     * @dev Returns the list of solution hashes that define an open answer test
+     * Also used with mixed tests
+     */
+    function getOpenAnswersHashes(uint256 testId) external view returns (uint256[] memory) {
+        require(_exists(testId), "Test does not exist");
+        uint8 _testType = _tests[testId].testType;
+        require(_testType < 100, "Test is not open answer or mixed");
+        return _openAnswersHashes[testId];
+    }
+
+    /**
      * @dev Returns if a given test is still valid, that is, if it exists
      */
     function testExists(uint256 testId) external view returns (bool) {
@@ -249,6 +277,16 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     }
 
     /**
+     * @dev Allows the owner of a test to increase its gas fund
+     */
+    function fundTest(uint256 testId) external payable {
+        require(_exists(testId), "Test does not exist");
+        require(ownerOf(testId) == msg.sender, "Funding test that is not own");
+
+        _tests[testId].gasFund += msg.value;
+    }
+
+    /**
      * @dev Allows the owner of a test to no longer recognize it as valid by making it impossible to solve
      * Removing a test is final and all gain credentials will also
      */
@@ -261,10 +299,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         // Invalid tests are identified by a testType = 0.
         _tests[testId].testType = 255;
 
-        // Returns the funds to the owner if the test was never solved
-        if (_tests[testId].solvers == 0) {
-            payable(msg.sender).transfer(_tests[testId].prize);
-        }
+        // Returns the remaining gas fund to the owner
+        payable(msg.sender).transfer(_tests[testId].gasFund);
 
         emit Transfer(msg.sender, address(0), testId);
     }
@@ -279,6 +315,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint[2] calldata c,
         uint[] calldata input  // multiple: [solutionHash, salt], open: [results, answerHashesRoot, salt], mixed: [solutionHash, results, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
     ) external nonReentrant {
+        uint256 gasAtStart = gasleft();  // Gas refund
+
         require(_exists(testId), "Solving test that does not exist");
 
         Test memory _test = _tests[testId];
@@ -356,12 +394,14 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(result > credentialsContract.getResults(msg.sender, testId), "Your existing credential has a better result");
         }
 
-        if (_test.solvers == 0) { payable(msg.sender).transfer(_test.prize); }
         credentialsContract.giveCredentials(msg.sender, testId, result);
 
-        // TODO: add gas refund here? currently thinking: no
-        // The funds in the smart contract could be drained by a pityful attacker,
-        // to no loss and the only gain of increasing entropy
+        // Refunds gas to solver from the testId fund
+        uint256 gasRefund = (gasAtStart - gasleft() + 34619) * tx.gasprice;
+        if (_tests[testId].gasFund >= gasRefund) {
+            _tests[testId].gasFund -= gasRefund;
+            payable(msg.sender).transfer(gasRefund);
+        } 
     }
 
     /**

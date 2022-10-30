@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.7;
-/* 
-import "./verifiers/OpenAnswerVerifier.sol";
-import "./verifiers/MultipleChoiceVerifier.sol";
-import "./verifiers/MixedTestVerifier.sol"; */
+
 import "./Pairing.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
+interface IPoseidon {
+    function poseidon(uint256[2] calldata) external pure returns(uint256);
+}
 
 contract TestVerifier {
     using SafeMath for uint256;
@@ -24,6 +25,17 @@ contract TestVerifier {
         Pairing.G1Point A;
         Pairing.G2Point B;
         Pairing.G1Point C;
+    }
+
+    /// @return r bool true if the tree with answerHashes at its leaves hashes into answersRoot at the top
+    function verifyTestAnswers(
+        uint[] calldata answerHashes,
+        uint answersRoot
+    ) public view returns(bool r) {
+        return true;
+        // To be added in v2
+        // For v1, only owner can publish tests so we can safely assume the answer hashes provided are correct
+        // For v2, verifying answer hashes may be used to increase reputation of the test
     }
 
     /// @return r  bool true if proof is valid
