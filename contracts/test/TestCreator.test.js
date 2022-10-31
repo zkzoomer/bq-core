@@ -4,7 +4,7 @@ const {
     shouldBehaveLikeERC721Metadata,
     shouldBehaveLikeERC721Enumerable,
 } = require('./ERC721.behavior');
-const { shouldBehaveLiketestCreator } = require('./testCreator.behavior')
+const { shouldBehaveLikeTestCreator } = require('./TestCreator.behavior')
 
 const testCreator = artifacts.require('TestCreator')
 const Credentials = artifacts.require('Credentials')
@@ -34,5 +34,5 @@ contract('testCreator', function (accounts) {
     shouldBehaveLikeERC721(approveRevertMessage, transferRevertMessage, ...accounts);
     shouldBehaveLikeERC721Metadata('ERC721', name, symbol, ...accounts);
     shouldBehaveLikeERC721Enumerable('ERC721', ...accounts)
-    shouldBehaveLiketestCreator(...accounts)
+    shouldBehaveLikeTestCreator(...accounts)
 })

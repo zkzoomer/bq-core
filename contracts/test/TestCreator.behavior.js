@@ -78,7 +78,7 @@ const altMixedProofB = require("./proof/mixed/altMixedProofB.json")
 const altMixedPublicB = require("./proof/mixed/altMixedPublicB.json")
 
 
-function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operator, other) {
+function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, operator, other) {
 
     const solveTest = async (testContract, tokenId, proof, input, caller = solver) => {
         await testContract.solveTest(
@@ -91,7 +91,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
         )
     }
 
-    context('without created tests', function () {
+    /* context('without created tests', function () {
         describe('createtest', function () {
             context('when the test type specified is not supported', function () {
                 it('reverts', async function () {
@@ -356,7 +356,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 })
             })
         })
-    })
+    }) */
 
     context('with created tests', function () {
         beforeEach(async function () {
@@ -384,6 +384,91 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                 50, 64, 1, credentialLimit, timeLimit, [solutionHashB, answerHashesB_root], requiredPass, credentialsGained, testURI,
                 { from: owner, value: prize }
             )
+        })
+
+        describe('verifyTestAnswers', function () {
+            context('with unverified tests', function () {
+                it('reverts if the test does not exist', async function () {
+                    await expectRevert(
+                        this.testCreator.verifyTestAnswers(nonExistentTokenId, answerHashesA)
+                        ,
+                        "Test does not exist"
+                    )
+                })
+                it('reverts for non open answer tests', async function () {
+                    await expectRevert(
+                        this.testCreator.verifyTestAnswers('1', answerHashesA)
+                        ,
+                        "Test is not open answer or mixed"
+                    )
+                })
+                it('reverts if not called by the owner', async function () {
+                    await expectRevert(
+                        this.testCreator.verifyTestAnswers('3', answerHashesA, { from: solver })
+                        ,
+                        "Verifying test that is not own"
+                    )
+                })
+                it('reverts with invalid number of answers', async function () {
+                    await expectRevert(
+                        this.testCreator.verifyTestAnswers('3', answerHashesA.slice(1))
+                        ,
+                        "Invalid number provided"
+                    )
+                })
+            })
+
+            context('with verified tests', function () {
+                beforeEach(async function () {
+                    await this.testCreator.verifyTestAnswers('3', answerHashesA)
+                })
+                it('reverts if the test was already verified', async function () {
+                    await expectRevert(
+                        this.testCreator.verifyTestAnswers('3', answerHashesA)
+                        ,
+                        "Test was already verified"
+                    )
+                })
+            })
+        })
+
+        describe("getOpenAnswersHashes", function () {
+            context('when the given testId does not exist', function () {
+                it('reverts', async function () {
+                    await expectRevert(
+                        this.testCreator.getOpenAnswersHashes(nonExistentTokenId)
+                        ,
+                        "Test does not exist"
+                    )
+                })
+            })
+            context('when the given testId is not openAnswer', function () {
+                it('reverts', async function () {
+                    await expectRevert(
+                        this.testCreator.getOpenAnswersHashes('1')
+                        ,
+                        "Test is not open answer or mixed"
+                    )
+                })
+            })
+            context('with unverified tests', function () {
+                it('reverts', async function () {
+                    await expectRevert(
+                        this.testCreator.getOpenAnswersHashes('3')
+                        ,
+                        "Test was not verified"
+                    )
+                })
+            })
+            context('when test is verified', function () {
+                beforeEach(async function () {
+                    await this.testCreator.verifyTestAnswers('3', answerHashesA)
+                })
+                it('returns the specified open answer hashes', async function () {
+                    expect((await this.testCreator.getOpenAnswersHashes('3')).map(s => { return s.toString() }))
+                        .to.deep.equal(answerHashesA.map(s => { return s.toString() }))
+                })
+            })
         })
 
         describe('getMultipleChoiceRoot', function () {
@@ -528,6 +613,62 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
             })
         })
 
+        describe('fundTest', function () {
+            context('when sending no funds', function () {
+                it('reverts', async function () {
+                    await expectRevert.unspecified(
+                        this.testCreator.fundTest('1', { value: 0 })
+                    )
+                })
+            })
+            context('when the test does not exist', function () {
+                it('reverts', async function () {
+                    await expectRevert(
+                        this.testCreator.fundTest(nonExistentTokenId, { value: web3.utils.toWei('1', 'ether') })
+                        ,
+                        "Test does not exist"
+                    )
+                })
+            })
+            context('when the caller does not own the test', function () {
+                it('reverts', async function () {
+                    await expectRevert(
+                        this.testCreator.fundTest('1', { from: solver, value: web3.utils.toWei('1', 'ether') })
+                        ,
+                        "Funding test that is not own"
+                    )
+                })
+            })
+            context('when the test was deleted', function () {
+                it('reverts', async function () {
+                    await this.testCreator.invalidateTest('1', { from: owner })
+                    await expectRevert(
+                        this.testCreator.fundTest('1', { from: owner, value: web3.utils.toWei('1', 'ether') })
+                        ,
+                        "Test has been deleted and can no longer be funded"
+                    )
+                })
+            })
+            context('with a successful call', function () {
+                it('funds the specified test', async function () {
+                    const funding = web3.utils.toWei('2', 'ether')
+                    await this.testCreator.fundTest('1', { from: owner, value: funding})
+                    expect((await this.testCreator.getTest('1')).slice(0,9).map(n => { return n.toString() }))
+                        .to.deep.equal([
+                            '100',
+                            '1',
+                            '100',
+                            '0',
+                            credentialLimit,
+                            timeLimit,
+                            requiredPass,
+                            web3.utils.toWei('3', 'ether'),
+                            credentialsGained
+                    ])
+                })
+            })
+        })
+
         describe('invalidateTest', function () {
             context('when deleting a nonexistent test', function () {
                 it('reverts', async function () {
@@ -665,9 +806,15 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     )
                 })
 
-                it('sends the funds back if the test was never solved', async function () {
+                it('sends the remaining funds back', async function () {
+                    // Draining sum for one balance
+                    await solveTest(this.testCreator, '4', openProofB, openPublicB)
+                    // Adding sum for one balance
+                    await this.testCreator.fundTest('6', { value: web3.utils.toWei('3.50', 'ether') })
+                    
                     const sendsFundsBack = async (tokenId) => {
                         let startBalance = BigInt(await web3.eth.getBalance(owner))
+                        let outstandingBalance = (await this.testCreator.getTest(tokenId)).gasFund
 
                         let txDict = await this.testCreator.invalidateTest(tokenId, { from: owner })
                         let txFee = BigInt(txDict.receipt.gasUsed.toString()) * BigInt(txDict.receipt.effectiveGasPrice.toString())
@@ -675,7 +822,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                         let endBalance = BigInt(await web3.eth.getBalance(owner))
 
                         const balanceGain = endBalance - startBalance
-                        const expectedGain = BigInt(prize) - txFee
+                        const expectedGain = BigInt(outstandingBalance) - txFee
 
                         expect(balanceGain).to.be.equal(expectedGain)
                     }
@@ -685,7 +832,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     await sendsFundsBack('6')
                 })
                 
-                it('does not send any funds back if the test did not include a prize', async function () {
+                it('does not send any funds back if the test did not include any', async function () {
                     await this.testCreator.createTest(
                         100, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                         { from: owner }
@@ -718,36 +865,6 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     await noFundsBack('9')
                 })
 
-                it('does not send any funds back if the test was solved once', async function () {
-                    const noFundsBack = async (tokenId, proof, input) => {
-                        let startBalance = BigInt(await web3.eth.getBalance(owner))
-
-                        await this.testCreator.solveTest(
-                            tokenId,
-                            [proof.pi_a[0], proof.pi_a[1]],
-                            [[proof.pi_b[0][1], proof.pi_b[0][0]], [proof.pi_b[1][1], proof.pi_b[1][0]]],
-                            [proof.pi_c[0], proof.pi_c[1]],
-                            input,
-                            { from: solver }
-                        )
-
-                        let txDict = await this.testCreator.invalidateTest(tokenId, { from: owner })
-                    
-                        let txFee = BigInt(txDict.receipt.gasUsed.toString()) * BigInt(txDict.receipt.effectiveGasPrice.toString())
-
-                        let endBalance = BigInt(await web3.eth.getBalance(owner))
-
-                        const balanceGain = endBalance - startBalance
-                        const expectedGain = - txFee
-
-                        expect(balanceGain).to.be.equal(expectedGain)
-                    }
-
-                    await noFundsBack('2', multipleProofB, multiplePublicB)
-                    await noFundsBack('4', openProofB, openPublicB)
-                    await noFundsBack('6', mixedProofB, mixedPublicB)
-                })
-
                 it('emits a transfer event', async function () {
                     expectEvent(tx1, 'Transfer', { from: owner, to: ZERO_ADDRESS, tokenId: new BN('1')})
                     expectEvent(tx2, 'Transfer', { from: owner, to: ZERO_ADDRESS, tokenId: new BN('3')})
@@ -758,7 +875,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
 
         describe('solveTest', function () {
 
-            context('when the given testId does not exist', function () {
+            /* context('when the given testId does not exist', function () {
                 it('reverts', async function () {
                     await expectRevert(
                         this.testCreator.solveTest(
@@ -1147,12 +1264,14 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                     await solveTest(this.testCreator, '3', openProofA, openPublicA)
                     await solveTest(this.testCreator, '5', mixedProofA, mixedPublicA)
                 })
-            })
+            }) */
 
             context('when verification is successful', function () {
                 let tx1, tx2, tx3
+                let startBalance, balanceAfterTx1, balanceAfterTx2, balanceAfterTx3
 
                 beforeEach(async function () {
+                    startBalance = BigInt(await web3.eth.getBalance(solver))
                     tx1 = await this.testCreator.solveTest(
                         '1',
                         [multipleProofA.pi_a[0], multipleProofA.pi_a[1]],
@@ -1161,6 +1280,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                         multiplePublicA,
                         { from: solver }
                     )
+                    balanceAfterTx1 = BigInt(await web3.eth.getBalance(solver))
                     tx2 = await this.testCreator.solveTest(
                         '3',
                         [openProofA.pi_a[0], openProofA.pi_a[1]],
@@ -1169,6 +1289,7 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                         openPublicA,
                         { from: solver }
                     )
+                    balanceAfterTx2 = BigInt(await web3.eth.getBalance(solver))
                     tx3 = await this.testCreator.solveTest(
                         '5',
                         [mixedProofA.pi_a[0], mixedProofA.pi_a[1]],
@@ -1177,9 +1298,12 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                         mixedPublicA,
                         { from: solver }
                     )
+                    balanceAfterTx3 = BigInt(await web3.eth.getBalance(solver))
                 })
 
                 it('updates the on chain test object', async function () {
+                    const gasSpent1 = BigInt(tx1.receipt.gasUsed.toString()) * BigInt(tx1.receipt.effectiveGasPrice.toString())
+                    const refund1 = balanceAfterTx1 - startBalance + gasSpent1
                     expect((await this.testCreator.getTest('1')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
                             '100',
@@ -1189,9 +1313,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                             credentialLimit,
                             timeLimit,
                             requiredPass,
-                            prize,
+                            (BigInt(prize) - refund1).toString(),
                             credentialsGained
                         ])
+                    const gasSpent2 = BigInt(tx2.receipt.gasUsed.toString()) * BigInt(tx2.receipt.effectiveGasPrice.toString())
+                    const refund2 = balanceAfterTx2 - balanceAfterTx1 + gasSpent2
                     expect((await this.testCreator.getTest('3')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
                             '0',
@@ -1201,9 +1327,11 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                             credentialLimit,
                             timeLimit,
                             requiredPass,
-                            prize,
+                            (BigInt(prize) - refund2).toString(),
                             credentialsGained
                         ])
+                    const gasSpent3 = BigInt(tx3.receipt.gasUsed.toString()) * BigInt(tx3.receipt.effectiveGasPrice.toString())
+                    const refund3 = balanceAfterTx3 - balanceAfterTx2 + gasSpent3
                     expect((await this.testCreator.getTest('5')).slice(0,9).map(n => { return n.toString() }))
                         .to.deep.equal([
                             '50',
@@ -1213,16 +1341,16 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                             credentialLimit,
                             timeLimit,
                             requiredPass,
-                            prize,
+                            (BigInt(prize) - refund3).toString(),
                             credentialsGained
                         ])
                 })
 
-                it('pays the first solver but not the following ones', async function () {
-
-                    const paysFirstNotFollowing = async (tokenId, proof, public, altProof, altPublic) => {
+                it('refunds the solver if the test has enough funds', async function () {
+                    // TODO
+                    const refundsSolver = async (tokenId, proof, public, altProof, altPublic) => {
                         let startBalance = BigInt(await web3.eth.getBalance(solver))
-
+                        
                         // First solver
                         let txDict = await this.testCreator.solveTest(
                             tokenId,
@@ -1237,10 +1365,8 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
                         
                         let endBalance = BigInt(await web3.eth.getBalance(solver))
 
-                        const balanceGain = endBalance - startBalance
-                        const expectedGain = BigInt(prize) - txFee
-
-                        expect(balanceGain).to.be.equal(expectedGain)
+                        const balanceGain = - endBalance + startBalance // negative
+                        expect(parseInt(balanceGain)).to.be.lessThan(parseInt(web3.utils.toWei('0.0001', 'ether')))
                         
                         // Second solver
                         let altStartBalance = BigInt(await web3.eth.getBalance(altSolver))
@@ -1257,20 +1383,18 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
 
                         let altEndBalance = BigInt(await web3.eth.getBalance(altSolver))
 
-                        const altBalanceGain = altEndBalance - altStartBalance
-                        const altExpectedGain = - altTxFee
+                        const altBalanceGain = - altEndBalance + altStartBalance  // negative
 
-                        expect(altExpectedGain).to.be.equal(altBalanceGain)
+                        expect(parseInt(altBalanceGain)).to.be.lessThan(parseInt(web3.utils.toWei('0.0001', 'ether')))
                     }
-
-                    await paysFirstNotFollowing('2', multipleProofB, multiplePublicB, altMultipleProofB, altMultiplePublicB)
-                    await paysFirstNotFollowing('4', openProofB, openPublicB, altOpenProofB, altOpenPublicB)
-                    await paysFirstNotFollowing('6', mixedProofB, mixedPublicB, altMixedProofB, altMixedPublicB)
+                    
+                    await refundsSolver('2', multipleProofB, multiplePublicB, altMultipleProofB, altMultiplePublicB)
+                    await refundsSolver('4', openProofB, openPublicB, altOpenProofB, altOpenPublicB)
+                    await refundsSolver('6', mixedProofB, mixedPublicB, altMixedProofB, altMixedPublicB)
                 
                 })
 
-                it('does not pay the solver if no prize was specified', async function () {
-
+                it('does not refund the solver if the test does not have enough funds', async function () {
                     await this.testCreator.createTest(
                         100, 1, 100, credentialLimit, timeLimit, [solutionHashA], requiredPass, credentialsGained, testURI,
                         { from: owner }
@@ -1346,5 +1470,5 @@ function shouldBehaveLiketestCreator(owner, newOwner, solver, altSolver, operato
 }
 
 module.exports = {
-    shouldBehaveLiketestCreator
+    shouldBehaveLikeTestCreator
 };

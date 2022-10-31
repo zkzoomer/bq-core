@@ -27,7 +27,7 @@ contract TestVerifier {
         Pairing.G1Point C;
     }
 
-    /// @return r bool true if the tree with answerHashes at its leaves hashes into answersRoot at the top
+    /* /// @return r bool true if the tree with answerHashes at its leaves hashes into answersRoot at the top
     function verifyTestAnswers(
         uint[] calldata answerHashes,
         uint answersRoot
@@ -36,7 +36,7 @@ contract TestVerifier {
         // To be added in v2
         // For v1, only owner can publish tests so we can safely assume the answer hashes provided are correct
         // For v2, verifying answer hashes may be used to increase reputation of the test
-    }
+    } */
 
     /// @return r  bool true if proof is valid
     function verifyMultipleProof(

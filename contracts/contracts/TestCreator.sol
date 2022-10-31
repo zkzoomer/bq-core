@@ -213,10 +213,11 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      */
     function verifyTestAnswers(uint256 testId, uint256[] memory answerHashes) external {
         require(_exists(testId), "Test does not exist");
+        require(_tests[testId].testType < 100, "Test is not open answer or mixed");
         require(_openAnswersHashes[testId].length == 0, "Test was already verified");
         require(ownerOf(testId) == msg.sender, "Verifying test that is not own");
-        require(verifierContract.verifyTestAnswers(answerHashes, _openAnswersRoot[testId]), "Answers provided do not verify test");
-
+        require(answerHashes.length == _tests[testId].nQuestions, "Invalid number provided");
+        /* require(verifierContract.verifyTestAnswers(answerHashes, _openAnswersRoot[testId]), "Answers provided do not verify test"); */
         _openAnswersHashes[testId] = answerHashes;
     } 
     
@@ -234,8 +235,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      */
     function getMultipleChoiceRoot(uint256 testId) external view returns (uint256) {
         require(_exists(testId), "Test does not exist");
-        uint8 _testType = _tests[testId].testType;
-        require(_testType > 0 && _testType <= 100, "Test is not multiple choice or mixed");
+        require(_tests[testId].testType > 0 && _tests[testId].testType <= 100, "Test is not multiple choice or mixed");
         return _multipleChoiceRoot[testId];
     }
 
@@ -245,8 +245,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      */
     function getOpenAnswersRoot(uint256 testId) external view returns (uint256) {
         require(_exists(testId), "Test does not exist");
-        uint8 _testType = _tests[testId].testType;
-        require(_testType < 100, "Test is not open answer or mixed");
+        require(_tests[testId].testType < 100, "Test is not open answer or mixed");
         return _openAnswersRoot[testId];
     }
 
@@ -256,8 +255,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      */
     function getOpenAnswersHashes(uint256 testId) external view returns (uint256[] memory) {
         require(_exists(testId), "Test does not exist");
-        uint8 _testType = _tests[testId].testType;
-        require(_testType < 100, "Test is not open answer or mixed");
+        require(_tests[testId].testType < 100, "Test is not open answer or mixed");
+        require(_openAnswersHashes[testId].length > 0, "Test was not verified");
         return _openAnswersHashes[testId];
     }
 
@@ -280,9 +279,10 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * @dev Allows the owner of a test to increase its gas fund
      */
     function fundTest(uint256 testId) external payable {
+        require(msg.value > 0);  // Must send value
         require(_exists(testId), "Test does not exist");
         require(ownerOf(testId) == msg.sender, "Funding test that is not own");
-
+        require(_tests[testId].testType != 255, "Test has been deleted and can no longer be funded");
         _tests[testId].gasFund += msg.value;
     }
 
@@ -397,7 +397,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         credentialsContract.giveCredentials(msg.sender, testId, result);
 
         // Refunds gas to solver from the testId fund
-        uint256 gasRefund = (gasAtStart - gasleft() + 34619) * tx.gasprice;
+        uint256 gasRefund = (gasAtStart - gasleft() + 40000) * tx.gasprice;
         if (_tests[testId].gasFund >= gasRefund) {
             _tests[testId].gasFund -= gasRefund;
             payable(msg.sender).transfer(gasRefund);
