@@ -83,7 +83,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     mapping (uint256 => bool) public usedSalts;
 
     /**
-     * @dev Initializes the contract by setting a `name` and a `symbol`
+     * @dev Initializes the contract by setting a `name` and a `symbol` and deploying the Credentials and TestVerifier contracts
      */
     constructor () {
         _name = "Block Qualified tests";
@@ -144,7 +144,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * @dev Creates a new multiple choice/open answer/mixed test, storing the defining hashes on chain
      *
      * We assume the credential issuer will provide a solvable test and specify the actual number of questions it has
-     * For the first iteration of the protocol, only the
      */
     function createTest(
         uint8 _testType,
@@ -250,7 +249,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     }
 
     /**
-     * @dev Returns the list of solution hashes that define an open answer test
+     * @dev Returns the list of solution hashes that define an open answer test, if specified
      * Also used with mixed tests
      */
     function getOpenAnswersHashes(uint256 testId) external view returns (uint256[] memory) {
@@ -261,10 +260,18 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     }
 
     /**
-     * @dev Returns if a given test is still valid, that is, if it exists
+     * @dev Returns if a given test exists
      */
     function testExists(uint256 testId) external view returns (bool) {
         return _exists(testId);
+    }
+
+    /**
+     * @dev Returns if a given test is still valid
+     */
+    function testIsValid(uint256 testId) external view returns (bool) {
+        require(_exists(testId), "Test does not exist");
+        return _tests[testId].testType != 255;
     }
 
     /**
@@ -288,7 +295,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
 
     /**
      * @dev Allows the owner of a test to no longer recognize it as valid by making it impossible to solve
-     * Removing a test is final and all gain credentials will also
+     * Invalidating a test is final
      */
     function invalidateTest(uint256 testId) external nonReentrant {
         require(_exists(testId), "Test does not exist");
@@ -296,7 +303,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         require(ownerOf(testId) == msg.sender, "Invalidating test that is not own");
 
         // Test still lives on chain for reference, but can no longer be solved.
-        // Invalid tests are identified by a testType = 0.
         _tests[testId].testType = 255;
 
         // Returns the remaining gas fund to the owner
@@ -313,7 +319,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
-        uint[] calldata input  // multiple: [solutionHash, salt], open: [results, answerHashesRoot, salt], mixed: [solutionHash, results, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
+        uint[] calldata input  
     ) external nonReentrant {
         uint256 gasAtStart = gasleft();  // Gas refund
 
@@ -409,9 +415,9 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      */
     function _validateSolving(uint256 testId, Test memory _test) internal view {
         require(msg.sender != ownerOf(testId), "Test cannot be solved by owner");
-        require(_test.credentialLimit == 0 || _test.solvers < _test.credentialLimit, "Maximum number of credentials reached");
+        require(_test.solvers < _test.credentialLimit, "Maximum number of credentials reached");
         require(block.timestamp <= _test.timeLimit, "Time limit for this credential reached");
-        if(_test.requiredPass != address(0)) {
+        if (_test.requiredPass != address(0)) {
             require(RequiredPass(_test.requiredPass).balanceOf(msg.sender) > 0, "Solver does not own the required token");
         }
     }

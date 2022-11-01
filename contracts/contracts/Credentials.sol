@@ -105,8 +105,6 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * @dev Mints a new credentials NFT corresponding to the multiple choice test defined by its `testId`
      */
     function giveCredentials(address receiver, uint256 testId, uint256 results) external onlyOwner {
-        /* require(!_receivedCredentials[receiver].contains(testId), "Solver already gained credentials"); */
-
         // Sets or updates the receiver's test results
         _credentialReceiverResults[testId][receiver] = results;
 
@@ -120,9 +118,6 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         }
     }
 
-    // If test is invalid you can see it by checking the credential itself
-    // YOu cannot burn them because if it got compromiused and a bunch of people minted them you would not be able to burn em all in the delete tx
-
     /**
      * @dev Returns the credentials string, obtained from the test contract
      */
@@ -133,7 +128,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     }
 
     /**
-     * @dev Returns the original test type of the credential: 0, 1 or 2
+     * @dev Returns the original test type of the credential
      */
     function getCredentialType(uint256 testId) external view returns (uint8) {
         require(testContract.testExists(testId), "test does not exist");
