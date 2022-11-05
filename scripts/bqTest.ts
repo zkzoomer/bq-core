@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 
 const keccak256 = require('keccak256')
 const snarkjs = require("snarkjs");
+const random = require('random-bigint')
 const fs = require("fs");
 
 import { rootFromLeafArray } from './utils/poseidonMerkle'
@@ -191,18 +192,150 @@ export default class bqTest {
      * Returns the grade obtained for the given solution in this test 
      * @returns zk proof of the solution.
      */
-    generateSolutionProof(answers: string[]): SolutionProof {
-        // TODO
-        return null as unknown as SolutionProof
+    async generateSolutionProof( openAnswers: string[] = [], multipleChoiceAnswers: number[] = [] ): Promise<SolutionProof> {
+        if ( this._stats.testType === 0 ) {  // open answers test
+            // All answers must be provided - even if an empty ""
+            if ( openAnswers.length !== this._stats.nQuestions ) { throw new RangeError('Some questions were left unanswered') }
+
+            // Generating proof and public signals
+            const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+                {
+                    answersHash: this._openAnswersHashes, 
+                    answers: getOpenAnswersArray(openAnswers),
+                    salt: random(256).toString() 
+                }, 
+                "./proof/open.wasm", 
+                "./proof/open.zkey"
+            );
+
+            return {
+                a: [proof.pi_a[0].toString(), proof.pi_a[1].toString()],
+                b: [
+                    [proof.pi_b[0][0].toString(), proof.pi_b[0][1].toString()], 
+                    [proof.pi_b[1][0].toString(), proof.pi_b[1][1].toString()]
+                ],
+                c: [proof.pi_c[0].toString(), proof.pi_c[1].toString()],
+                input: publicSignals
+            }
+
+        } else if ( this._stats.testType > 0 && this._stats.testType < 100 ) {  // mixed test
+            // Multiple choice answers provided must be numbers and less than 64 in number
+            if ( !(multipleChoiceAnswers as any[]).every(i => { return typeof i === 'number' }) ) { 
+                throw new TypeError('Answers must be numbers representing the multiple choices') 
+            }
+            if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
+            // All open answers must be provided - even if an empty ""
+            if ( openAnswers.length !== this._stats.nQuestions ) { throw new RangeError('Some questions were left unanswered') }
+
+            const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+                {   
+                    multipleChoiceAnswers: getMultipleChoiceAnswersArray(multipleChoiceAnswers),
+                    multipleChoiceSalt: random(256).toString() ,
+                    openAnswersHash: this._openAnswersHashes, 
+                    openAnswers: getOpenAnswersArray(openAnswers),
+                    openAnswersSalt: random(256).toString()   
+                }, 
+                "./proof/mixed_test.wasm", 
+                "./proof/mixed.zkey"
+            );
+
+            return {
+                a: [proof.pi_a[0].toString(), proof.pi_a[1].toString()],
+                b: [
+                    [proof.pi_b[0][0].toString(), proof.pi_b[0][1].toString()], 
+                    [proof.pi_b[1][0].toString(), proof.pi_b[1][1].toString()]
+                ],
+                c: [proof.pi_c[0].toString(), proof.pi_c[1].toString()],
+                input: publicSignals
+            }
+
+        } else if ( this._stats.testType === 100 ) {  // multiple choice test
+            // Answers provided must be numbers and less than 64 in number
+            if ( !(multipleChoiceAnswers as any[]).every(i => { return typeof i === 'number' }) ) { 
+                throw new TypeError('Answers must be numbers representing the multiple choices') 
+            }
+            if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
+            
+            // Generating proof and public signals
+            const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+                {
+                    answers: getMultipleChoiceAnswersArray(multipleChoiceAnswers),  
+                    salt: random(256).toString()
+                }, 
+                "./proof/multiple.wasm", 
+                "./proof/multiple.zkey"
+            );
+
+            return {
+                a: [proof.pi_a[0].toString(), proof.pi_a[1].toString()],
+                b: [
+                    [proof.pi_b[0][0].toString(), proof.pi_b[0][1].toString()], 
+                    [proof.pi_b[1][0].toString(), proof.pi_b[1][1].toString()]
+                ],
+                c: [proof.pi_c[0].toString(), proof.pi_c[1].toString()],
+                input: publicSignals
+            }
+
+        } else {  // test was invalidated
+            throw new Error('Test is invalidated and cannot be solved')
+        }
+        
+        function getMultipleChoiceAnswersArray(multipleChoiceAnswers: number[]): number[] {
+            const answersArray = new Array(64).fill(0)
+            answersArray.forEach( (_, i) => { if ( i < multipleChoiceAnswers.length ) { 
+                answersArray[i] = multipleChoiceAnswers[i] as number 
+            }})
+            return answersArray
+        }
+
+        function getOpenAnswersArray( openAnswers: string[] ): string[] {
+            const resultsArray = new Array(64).fill(
+                poseidon([BigInt('0x' + keccak256("").toString('hex'))]).toString()
+            )
+            resultsArray.forEach( (_, i) => { if (i < openAnswers.length) {resultsArray[i] = openAnswers[i]} })
+            return resultsArray
+        }
     }
 
     /**
      * Verifies that the solution proof given will be accepted by the smart contract
      * @returns if the zk proof of the solution is valid.
      */
-    verifySolutionProof(proof: SolutionProof): boolean {
-        // TODO
-        return true
+    async verifySolutionProof(proof: SolutionProof): Promise<boolean> {
+        let vkey
+        if ( this._stats.testType === 0 ) { 
+            vkey = require("./proof/open_verification_key.json") 
+        } else if ( this._stats.testType > 0 && this._stats.testType < 100 ) {
+            vkey = require("./proof/mixed_verification_key.json")
+        } else if ( this._stats.testType === 100 ) {
+            vkey = require("./proof/multiple_verification_key.json")
+        } else {
+            throw new Error('Test is invalidated and cannot be solved')
+        }
+
+        return await snarkjs.groth16.verify(
+            vkey,
+            proof.input,
+            proofToSnarkjs(proof.a, proof.b, proof.c)
+        )
+
+        function proofToSnarkjs(a, b, c) {
+            return {
+                pi_a: [
+                    a[0], a[1], '1'
+                ],
+                pi_b: [
+                    [b[0][0], b[0][1]],
+                    [b[1][0], b[1][1]],
+                    ['1', '0']
+                ],
+                pi_c: [
+                    c[0], c[1], '1'
+                ],
+                protocol: 'groth16',
+                curve: 'bn128'
+            }
+        }
     }
 
     /**

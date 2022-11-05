@@ -22,8 +22,8 @@ export type Grade = {
 }
 
 export type SolutionProof = {
-    a: string[2],
-    b: string[2][2],
-    c: string[2],
+    a: [string, string],
+    b: [[string, string], [string, string]],
+    c: [string, string],
     input: string[]
 }

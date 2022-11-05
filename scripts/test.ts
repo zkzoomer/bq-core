@@ -1,12 +1,22 @@
 const keccak256 = require('keccak256')
-const poseidon = require("./utils/poseidon.js");
+const snarkjs = require("snarkjs");
+const random = require("random-bigint")
 
-const ff = require("ffjavascript")
+const multvkey = require("./proof/multiple_verification_key.json")
 
-console.log(poseidon(['89477152217924674838424037953991966239322087453347756267410168184682657981552']))
+snarkjs.groth16.fullProve(
+    {
+        answers: new Array(64).fill(0),  
+        salt: random(256).toString()
+    }, 
+    "./proof/multiple.wasm", 
+    "./proof/multiple.zkey"
+).then(( {proof, publicSignals} ) => { 
 
-console.log([
-    poseidon([BigInt('0x' + keccak256("sneed's").toString('hex'))]).toString(), 
-    poseidon([BigInt('0x' + keccak256('feed').toString('hex'))]).toString(),
-    poseidon([BigInt('0x' + keccak256('seed').toString('hex'))]).toString()
-])
+    console.log(proof)
+    console.log(publicSignals)
+
+    snarkjs.groth16.verify(
+        multvkey, publicSignals, proof
+    ).then( (res) => { console.log(res) })
+})

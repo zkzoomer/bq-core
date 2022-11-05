@@ -10,6 +10,7 @@
     "circomlibjs": "^0.1.7",
     "ffjavascript": "^0.2.55",
     "keccak256": "^1.0.6",
+    "random-bigint": "^0.0.1",
     "snarkjs": "^0.4.24"
   },
   "devDependencies": {
