@@ -19,8 +19,7 @@ export default class bqTest {
     private _testURI: string
 
     // Test defining hashes
-    private _multipleChoiceRoot: string
-    private _openAnswersRoot: string
+    private _multipleChoiceRoot = ""
     private _openAnswersHashes: string[]
 
     // Deployed contracts
@@ -46,26 +45,44 @@ export default class bqTest {
      * Initializes the test object by retrieving the necessary data from on-chain
      */
     async init() {
-        this._stats = await this._testCreatorContract.getTest(this._testId)
-        this._testURI = await this._testCreatorContract.tokenURI(this._testId)
+        this._stats = this._testCreatorContract.getTest(this._testId)
+        this._testURI = this._testCreatorContract.tokenURI(this._testId)
+        var openAnswersRoot = ""
         
         if ( this._stats.testType === 0 ) {  // open answers test
-            this._openAnswersRoot = await this._testCreatorContract.getOpenAnswersRoot(this._testId)
+            openAnswersRoot = this._testCreatorContract.getOpenAnswersRoot(this._testId)
             if ( !this._openAnswersHashes ) {
-                // TODO - if this fails, test cannot be solved
-                this._openAnswersHashes = await this._testCreatorContract.getOpenAnswersHashes(this._testId)
+                try {
+                    this._openAnswersHashes = this._testCreatorContract.getOpenAnswersHashes(this._testId)
+                } catch (err) {
+                    throw new Error('Test cannot be solved as it misses the open answers hashes')
+                }
             }
         } else if ( this._stats.testType > 0 && this._stats.testType < 100 ) {  // mixed test
-            this._multipleChoiceRoot = await this._testCreatorContract.getMultipleChoiceRoot(this._testId)
-            this._openAnswersRoot = await this._testCreatorContract.getOpenAnswersRoot(this._testId)
+            this._multipleChoiceRoot = this._testCreatorContract.getMultipleChoiceRoot(this._testId)
+            openAnswersRoot = this._testCreatorContract.getOpenAnswersRoot(this._testId)
             if ( !this._openAnswersHashes ) {
-                // TODO - if this fails, test cannot be solved
-                this._openAnswersHashes = await this._testCreatorContract.getOpenAnswersHashes(this._testId)
+                try {
+                    this._openAnswersHashes = this._testCreatorContract.getOpenAnswersHashes(this._testId)
+                } catch (err) {
+                    throw new Error('Test cannot be solved as it misses the open answers hashes')
+                }
             }
         } else if ( this._stats.testType === 100 ) {  // multiple choice test
-            this._multipleChoiceRoot = await this._testCreatorContract.getMultipleChoiceRoot(this._testId)
+            this._multipleChoiceRoot = this._testCreatorContract.getMultipleChoiceRoot(this._testId)
         } else {  // test was invalidated
             this._isValid = false
+        }
+
+        // Verify that the open answer hashes provided are valid
+        const openAnswerHashes = new Array(64).fill(
+            poseidon([BigInt('0x' + keccak256("").toString('hex'))]).toString()
+        )
+        openAnswerHashes.forEach( (_, i) => { if (i < this._openAnswersHashes.length) {
+            openAnswerHashes[i] = this._openAnswersHashes[i]
+        }})
+        if ( rootFromLeafArray(openAnswerHashes).toString() !== openAnswersRoot.toString() ) {
+            throw new Error('Test cannot be solved because the open answer hashes are invalid')
         }
     }
 
@@ -74,6 +91,44 @@ export default class bqTest {
      * @returns grade and correct answers obtained for the given solution.
      */
     gradeSolution( openAnswers: string[] = [], multipleChoiceAnswers: number[] = [] ): Grade {
+
+        const getMultipleChoiceAnswersResult = ( multipleChoiceAnswers: number[] ): number => {
+            // Filling the array to 64 values
+            const answersArray = new Array(64).fill(0)
+            answersArray.forEach( (_, i) => { if ( i < multipleChoiceAnswers.length ) { 
+                answersArray[i] = multipleChoiceAnswers[i] as number 
+            }})
+    
+            // Checking if test is passed and returning the result
+            return rootFromLeafArray(answersArray) === this._multipleChoiceRoot ? 100 : 0
+        }
+
+        const getOpenAnswersResult = ( openAnswers: string[] ): { nCorrect: number, resultsArray: boolean[], testResult: number } => {
+            let nCorrect = 0
+            const resultsArray = new Array(openAnswers.length).fill(false)
+            for (var i = 0; i < 64; i++) {
+                if ( i < openAnswers.length ) {
+                    if ( poseidon([BigInt('0x' + keccak256(openAnswers[i]).toString('hex'))]).toString() === this._openAnswersHashes[i] ) {
+                        // Correct answer only if hash matches
+                        nCorrect++
+                        resultsArray[i] = true
+                    }
+                } else {
+                    nCorrect++  // Default hash is always correct, simply filling to 64
+                }
+            }
+
+            const testResult = (nCorrect + openAnswers.length > 64) ?  // prevent underflow
+                100 * (nCorrect + openAnswers.length - 64) / openAnswers.length
+            :
+                0;
+
+            return {
+                nCorrect,
+                resultsArray,
+                testResult
+            }
+        }
 
         if ( this._stats.testType === 0 ) {  // open answers test
             // All answers must be provided - even if an empty ""
@@ -149,43 +204,6 @@ export default class bqTest {
             throw new Error('Test is invalidated and cannot be solved')
         }
 
-        function getMultipleChoiceAnswersResult( multipleChoiceAnswers: number[] ): number {
-            // Filling the array to 64 values
-            const answersArray = new Array(64).fill(0)
-            answersArray.forEach( (_, i) => { if ( i < multipleChoiceAnswers.length ) { 
-                answersArray[i] = multipleChoiceAnswers[i] as number 
-            }})
-    
-            // Checking if test is passed and returning the result
-            return rootFromLeafArray(answersArray) === this._multipleChoiceRoot ? 100 : 0
-        }
-
-        function getOpenAnswersResult( openAnswers: string[] ): { nCorrect: number, resultsArray: boolean[], testResult: number } {
-            let nCorrect = 0
-            const resultsArray = new Array(openAnswers.length).fill(false)
-            for (var i = 0; i < 64; i++) {
-                if ( i < openAnswers.length ) {
-                    if ( poseidon([BigInt('0x' + keccak256(openAnswers[i]).toString('hex'))]).toString() === this._openAnswersHashes[i] ) {
-                        // Correct answer only if hash matches
-                        nCorrect++
-                        resultsArray[i] = true
-                    }
-                } else {
-                    nCorrect++  // Default hash is always correct, simply filling to 64
-                }
-            }
-
-            const testResult = (nCorrect + openAnswers.length > 64) ?  // prevent underflow
-                100 * (nCorrect + openAnswers.length - 64) / openAnswers.length
-            :
-                0;
-
-            return {
-                nCorrect,
-                resultsArray,
-                testResult
-            }
-        }
     }
 
     /**
@@ -198,7 +216,7 @@ export default class bqTest {
             if ( openAnswers.length !== this._stats.nQuestions ) { throw new RangeError('Some questions were left unanswered') }
 
             // Generating proof and public signals
-            const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+            const { proof, publicSignals } = snarkjs.groth16.fullProve(
                 {
                     answersHash: this._openAnswersHashes, 
                     answers: getOpenAnswersArray(openAnswers),
@@ -227,7 +245,7 @@ export default class bqTest {
             // All open answers must be provided - even if an empty ""
             if ( openAnswers.length !== this._stats.nQuestions ) { throw new RangeError('Some questions were left unanswered') }
 
-            const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+            const { proof, publicSignals } = snarkjs.groth16.fullProve(
                 {   
                     multipleChoiceAnswers: getMultipleChoiceAnswersArray(multipleChoiceAnswers),
                     multipleChoiceSalt: random(256).toString() ,
@@ -257,7 +275,7 @@ export default class bqTest {
             if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
             
             // Generating proof and public signals
-            const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+            const { proof, publicSignals } = snarkjs.groth16.fullProve(
                 {
                     answers: getMultipleChoiceAnswersArray(multipleChoiceAnswers),  
                     salt: random(256).toString()
@@ -313,7 +331,7 @@ export default class bqTest {
             throw new Error('Test is invalidated and cannot be solved')
         }
 
-        return await snarkjs.groth16.verify(
+        return snarkjs.groth16.verify(
             vkey,
             proof.input,
             proofToSnarkjs(proof.a, proof.b, proof.c)
@@ -342,9 +360,14 @@ export default class bqTest {
      * Generates the transaction object to be signed with the given solution attempt
      * @returns the solving transaction object to be signed
      */
-    generateSolutionTransaction(proof: SolutionProof): any {
-        // TODO
-        return null
+    generateSolutionTransaction(proof: SolutionProof): Promise<ethers.UnsignedTransaction> {
+        return this._testCreatorContract.populateTransaction.solveTest(
+            this._testId,
+            proof.a,
+            [[proof.b[0][1], proof.b[0][0]], [proof.b[1][1], proof.b[1][0]]],  // Order changes on the verifier smart contract
+            proof.c,
+            proof.input
+        )
     }
 
     /**
@@ -393,7 +416,7 @@ export default class bqTest {
      */
     async holdsCredential(address: string): Promise<boolean> {
         const addy = ethers.utils.getAddress(address)
-        const holders = await this.holdersList()
+        const holders = this.holdersList()
 
         return addy in holders
     }
