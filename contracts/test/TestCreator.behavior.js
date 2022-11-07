@@ -78,7 +78,7 @@ const altMixedProofB = require("./proof/mixed/altMixedProofB.json")
 const altMixedPublicB = require("./proof/mixed/altMixedPublicB.json")
 
 
-function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, operator, other) {
+async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, operator, other) {
 
     const solveTest = async (testContract, tokenId, proof, input, caller = solver) => {
         await testContract.solveTest(

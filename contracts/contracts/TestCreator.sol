@@ -324,35 +324,33 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint256 gasAtStart = gasleft();  // Gas refund
 
         require(_exists(testId), "Solving test that does not exist");
-
-        Test memory _test = _tests[testId];
-        uint8 testType = _test.testType;
+        
         uint256 result;
 
-        if ( testType == 0 ) {  // Open answers test, providing [results, answerHashesRoot, salt]
-            require(input.length == 3, "Invalid input length");
+        if ( _tests[testId].testType == 0 ) {  // Open answers test, providing [results, answerHashesRoot, salt]
+            require(input.length == 3);  // @dev invalid input length
             require(!usedSalts[input[2]], "Salt was already used");
             
-            _validateSolving(testId, _test);
+            _validateSolving(testId);
 
             // Ensuring the open answer test being solved is the one selected
             require(input[1] == _openAnswersRoot[testId], "Solving for another test");
 
             // Verify solution and get result
             require(verifierContract.verifyOpenProof(a, b, c, input), "Invalid proof");
-            result = (input[0] + _test.nQuestions > 64) ?  // prevent underflow
-                100 * (input[0] + _test.nQuestions - 64) / _test.nQuestions
+            result = (input[0] + _tests[testId].nQuestions > 64) ?  // prevent underflow
+                100 * (input[0] + _tests[testId].nQuestions - 64) / _tests[testId].nQuestions
             :
                 0;
-            require(result >= _test.minimumGrade, "Grade is below minimum");
+            require(result >= _tests[testId].minimumGrade, "Grade is below minimum");
 
             usedSalts[input[2]] = true;
 
-        } else if ( testType > 0 && testType < 100 ) {  // Mixed test, providing [solutionHash, results, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
-            require(input.length == 5, "Invalid input length");
+        } else if ( _tests[testId].testType > 0 && _tests[testId].testType < 100 ) {  // Mixed test, providing [solutionHash, results, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
+            require(input.length == 5);  // @dev invalid input length
             require(!usedSalts[input[3]] && !usedSalts[input[4]], "Salt was already used");
 
-            _validateSolving(testId, _test);
+            _validateSolving(testId);
 
             // Ensuring the open answer test being solved is the one selected
             require(input[2] == _openAnswersRoot[testId], "Solving for another test");
@@ -361,25 +359,25 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(verifierContract.verifyMixedProof(a, b, c, input), "Invalid proof");
 
             // The testType being below 100 means it is a mixed test, and its value represents the weight of the multiple choice test
-            result = (input[0] == _multipleChoiceRoot[testId] ? testType : 0) 
+            result = (input[0] == _multipleChoiceRoot[testId] ? _tests[testId].testType : 0) 
                 + 
                 (
-                (input[1] + _test.nQuestions > 64) ?
-                    (input[1] + _test.nQuestions - 64) * (100 - testType) / _test.nQuestions
+                (input[1] + _tests[testId].nQuestions > 64) ?
+                    (input[1] + _tests[testId].nQuestions - 64) * (100 - _tests[testId].testType) / _tests[testId].nQuestions
                 :
                     0
                 );
-            require(result >= _test.minimumGrade, "Grade is below minimum");
+            require(result >= _tests[testId].minimumGrade, "Grade is below minimum");
 
             usedSalts[input[3]] = true;
             usedSalts[input[4]] = true;
 
-        } else if ( testType == 100 ) {  // Multiple choice test, providing [solutionHash, salt]
-            require(input.length == 2, "Invalid input length");
+        } else if ( _tests[testId].testType == 100 ) {  // Multiple choice test, providing [solutionHash, salt]
+            require(input.length == 2);  // @dev invalid input length
             
             require(!usedSalts[input[1]], "Salt was already used");
 
-            _validateSolving(testId, _test);
+            _validateSolving(testId);
         
             // Verify solution and get result
             require(verifierContract.verifyMultipleProof(a, b, c, input), "Invalid proof");
@@ -389,7 +387,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
 
             usedSalts[input[1]] = true;
 
-        } else if ( testType == 255 ) {
+        } else if ( _tests[testId].testType == 255 ) {
             revert("Test has been deleted and can no longer be solved");
         } 
 
@@ -413,12 +411,12 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     /**
      * @dev Verifies that the test can be solved by msg.sender
      */
-    function _validateSolving(uint256 testId, Test memory _test) internal view {
+    function _validateSolving(uint256 testId) internal view {
         require(msg.sender != ownerOf(testId), "Test cannot be solved by owner");
-        require(_test.solvers < _test.credentialLimit, "Maximum number of credentials reached");
-        require(block.timestamp <= _test.timeLimit, "Time limit for this credential reached");
-        if (_test.requiredPass != address(0)) {
-            require(RequiredPass(_test.requiredPass).balanceOf(msg.sender) > 0, "Solver does not own the required token");
+        require(_tests[testId].solvers < _tests[testId].credentialLimit, "Maximum number of credentials reached");
+        require(block.timestamp <= _tests[testId].timeLimit, "Time limit for this credential reached");
+        if (_tests[testId].requiredPass != address(0)) {
+            require(RequiredPass(_tests[testId].requiredPass).balanceOf(msg.sender) > 0, "Solver does not own the required token");
         }
     }
 
