@@ -1092,7 +1092,7 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
 
             context('when giving an invalid input length', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.solveTest(
                             '1',
                             [multipleProofA.pi_a[0], multipleProofA.pi_a[1]],
@@ -1101,10 +1101,8 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
                             ['1'],
                             { from: solver }
                         )
-                        ,
-                        "Invalid input length"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.solveTest(
                             '3',
                             [openProofA.pi_a[0], openProofA.pi_a[1]],
@@ -1113,10 +1111,8 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
                             ['1'],
                             { from: solver }
                         )
-                        ,
-                        "Invalid input length"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.solveTest(
                             '5',
                             [mixedProofA.pi_a[0], mixedProofA.pi_a[1]],
@@ -1125,8 +1121,6 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
                             ['1', '6'],
                             { from: solver }
                         )
-                        ,
-                        "Invalid input length"
                     )
                 })
             })
