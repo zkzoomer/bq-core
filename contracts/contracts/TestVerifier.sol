@@ -13,6 +13,8 @@ contract TestVerifier {
     using SafeMath for uint32;
     using Pairing for *;
 
+    uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
     struct VerifyingKey {
         Pairing.G1Point alfa1;
         Pairing.G2Point beta2;
@@ -37,131 +39,58 @@ contract TestVerifier {
         // For v1, only owner can publish tests so we can safely assume the answer hashes provided are correct
         // For v2, verifying answer hashes may be used to increase reputation of the test
     } */
-
-    /// @return r  bool true if proof is valid
-    function verifyMultipleProof(
-        uint[2] calldata a,
-        uint[2][2] calldata b,
-        uint[2] calldata c,
-        uint[] calldata input  // [solutionHash, salt]
-    ) public view returns (bool r) {
-        Proof memory proof;
-        proof.A = Pairing.G1Point(a[0], a[1]);
-        proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
-        proof.C = Pairing.G1Point(c[0], c[1]);
-        uint[] memory inputValues = new uint[](input.length);
-        for(uint i = 0; i < input.length; i++){
-            inputValues[i] = input[i];
-        }
-        if (multipleVerify(inputValues, proof) == 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /// @return r  bool true if proof is valid
-    function verifyOpenProof(
-        uint[2] calldata a,
-        uint[2][2] calldata b,
-        uint[2] calldata c,
-        uint[] calldata input  // [results, answerHashesRoot, salt]
-    ) public view returns (bool r) {
-        Proof memory proof;
-        proof.A = Pairing.G1Point(a[0], a[1]);
-        proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
-        proof.C = Pairing.G1Point(c[0], c[1]);
-        uint[] memory inputValues = new uint[](input.length);
-        for(uint i = 0; i < input.length; i++){
-            inputValues[i] = input[i];
-        }
-        if (openVerify(inputValues, proof) == 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /// @return r  bool true if proof is valid
-    function verifyMixedProof(
-        uint[2] calldata a,
-        uint[2][2] calldata b,
-        uint[2] calldata c,
-        uint[] calldata input  // [solutionHash, correctNumber, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
-    ) public view returns (bool r) {
-        Proof memory proof;
-        proof.A = Pairing.G1Point(a[0], a[1]);
-        proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
-        proof.C = Pairing.G1Point(c[0], c[1]);
-        uint[] memory inputValues = new uint[](input.length);
-        for(uint i = 0; i < input.length; i++){
-            inputValues[i] = input[i];
-        }
-        if (mixedVerify(inputValues, proof) == 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function multipleVerify(uint[] memory input, Proof memory proof) internal view returns (uint) {
-        uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-        VerifyingKey memory vk = multipleVerifyingKey();
-        require(input.length + 1 == vk.IC.length,"verifier-bad-input");
-        // Compute the linear combination vk_x
-        Pairing.G1Point memory vk_x = Pairing.G1Point(0, 0);
-        for (uint i = 0; i < input.length; i++) {
-            require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
-            vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 1], input[i]));
-        }
-        vk_x = Pairing.addition(vk_x, vk.IC[0]);
-        if (!Pairing.pairingProd4(
-            Pairing.negate(proof.A), proof.B,
-            vk.alfa1, vk.beta2,
-            vk_x, vk.gamma2,
-            proof.C, vk.delta2
-        )) return 1;
-        return 0;
-    }
     
-    function openVerify(uint[] memory input, Proof memory proof) internal view returns (uint) {
-        uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-        VerifyingKey memory vk = openVerifyingKey();
-        require(input.length + 1 == vk.IC.length,"verifier-bad-input");
-        // Compute the linear combination vk_x
-        Pairing.G1Point memory vk_x = Pairing.G1Point(0, 0);
-        for (uint i = 0; i < input.length; i++) {
-            require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
-            vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 1], input[i]));
-        }
-        vk_x = Pairing.addition(vk_x, vk.IC[0]);
-        if (!Pairing.pairingProd4(
-            Pairing.negate(proof.A), proof.B,
-            vk.alfa1, vk.beta2,
-            vk_x, vk.gamma2,
-            proof.C, vk.delta2
-        )) return 1;
-        return 0;
-    }
+    /**
+     * @dev Verifies that a solving proof is correct for any of the kinds of tests
+     */
+    function verifyProof(
+        uint8 testType,
+        uint[2] calldata a,
+        uint[2][2] calldata b,
+        uint[2] calldata c,
+        uint[] calldata input,
+        uint salt
+    ) public view returns (bool r) {
+        Proof memory proof;
+        proof.A = Pairing.G1Point(a[0], a[1]);
+        proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
+        proof.C = Pairing.G1Point(c[0], c[1]);
 
-    function mixedVerify(uint[] memory input, Proof memory proof) internal view returns (uint) {
-        uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-        VerifyingKey memory vk = mixedVerifyingKey();
+        uint[] memory inputValues = new uint[](input.length);
+        for(uint i = 0; i < input.length; i++){
+            inputValues[i] = input[i];
+        }
+
+        VerifyingKey memory vk;
+        if (testType == 0) {
+            vk = openVerifyingKey();
+        } else if (testType > 0 && testType < 100) {
+            vk = mixedVerifyingKey();
+        } else if (testType == 100) {
+            vk = multipleVerifyingKey();
+        } else {
+            revert();
+        }
+        
         require(input.length + 1 == vk.IC.length,"verifier-bad-input");
-        // Compute the linear combination vk_x
         Pairing.G1Point memory vk_x = Pairing.G1Point(0, 0);
-        for (uint i = 0; i < input.length; i++) {
+
+        for (uint i = 0; i < input.length - 1; i++) {
             require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
             vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 1], input[i]));
         }
+        // Adding salt separetely, always the last of the public inputs of the proof
+        require(salt < snark_scalar_field,"verifier-gte-snark-scalar-field");
+        vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[input.length], salt));
+
         vk_x = Pairing.addition(vk_x, vk.IC[0]);
         if (!Pairing.pairingProd4(
             Pairing.negate(proof.A), proof.B,
             vk.alfa1, vk.beta2,
             vk_x, vk.gamma2,
             proof.C, vk.delta2
-        )) return 1;
-        return 0;
+        )) return false;
+        return true;
     }
 
     function multipleVerifyingKey() internal pure returns (VerifyingKey memory vk) {
@@ -274,12 +203,12 @@ contract TestVerifier {
              8495653923123431417604973247489272438418190587263600148770280649306958101930]
         );
         vk.delta2 = Pairing.G2Point(
-            [12456628371429697832225091233947187571241464206599839750481249622139706413383,
-             4056242890720950394935202719771210839785860022545252368795251390874687963168],
-            [8245842439039950988871439266375554735173339470842896331206115083563012138874,
-             19989000946341393623017814024753865300767316311542257586112832135511912466808]
+            [1398674077556833678603205869745338382511550197017630381065919344139460104494,
+             3014141459090505000095030624372489917693795198773335116263491328276630340608],
+            [13120479026136517116042114711188667637087197991302448027210388274283188943543,
+             2574771322543516116015805901471831513661013547873595798463432239126309871117]
         );
-        vk.IC = new Pairing.G1Point[](6);
+        vk.IC = new Pairing.G1Point[](5);
         
         vk.IC[0] = Pairing.G1Point( 
             14155345604055684351163947724917572363108847821610365204579461296099680625381,
@@ -302,15 +231,9 @@ contract TestVerifier {
         );                                      
         
         vk.IC[4] = Pairing.G1Point( 
-            16289863729921221766518437167597757859849573717901655269119576199581410792264,
-            15977376902579211878622150451349194140338163565265922986239277899993818978705
-        );                                      
-        
-        vk.IC[5] = Pairing.G1Point( 
-            7122513429883661688002474163731153313164600204174794189801336914616924985915,
-            13986818957048226732297724712319704899070612736742797514739327398774027871581
-        );                                      
-        
+            5082804802667679445422316896498188613190134367124049158170348187335333533166,
+            18604442687066796988077159560553385165827087913330405728706188415927414340778
+        );   
     }
 }
 

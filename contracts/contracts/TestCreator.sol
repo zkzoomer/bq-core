@@ -64,7 +64,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint24 credentialLimit;
         uint32 timeLimit;
         address requiredPass;
-        uint256 gasFund;
         string credentialsGained;
     }
 
@@ -155,7 +154,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         address _requiredPass,
         string memory _credentialsGained,
         string memory _testURI
-    ) external payable onlyOwner {
+    ) external onlyOwner {
         // Increase the number of tests available
         _ntests++;
         uint256 _testId = _ntests;
@@ -194,7 +193,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             _credentialLimit,   // credentialLimit
             _timeLimit,         // timeLimit
             _requiredPass,      // requiredPass
-            msg.value,          // gasFund
             _credentialsGained  // credentialsGained
         );
 
@@ -283,17 +281,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     }
 
     /**
-     * @dev Allows the owner of a test to increase its gas fund
-     */
-    function fundTest(uint256 testId) external payable {
-        require(msg.value > 0);  // Must send value
-        require(_exists(testId), "Test does not exist");
-        require(ownerOf(testId) == msg.sender, "Funding test that is not own");
-        require(_tests[testId].testType != 255, "Test has been deleted and can no longer be funded");
-        _tests[testId].gasFund += msg.value;
-    }
-
-    /**
      * @dev Allows the owner of a test to no longer recognize it as valid by making it impossible to solve
      * Invalidating a test is final
      */
@@ -305,9 +292,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         // Test still lives on chain for reference, but can no longer be solved.
         _tests[testId].testType = 255;
 
-        // Returns the remaining gas fund to the owner
-        payable(msg.sender).transfer(_tests[testId].gasFund);
-
         emit Transfer(msg.sender, address(0), testId);
     }
 
@@ -316,47 +300,49 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      */
     function solveTest(
         uint256 testId, 
+        address recipient,
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
         uint[] calldata input  
     ) external nonReentrant {
-        uint256 gasAtStart = gasleft();  // Gas refund
-
+        require(recipient != ownerOf(testId), "Test cannot be solved by owner");
+        require(_tests[testId].solvers < _tests[testId].credentialLimit, "Maximum number of credentials reached");
+        require(block.timestamp <= _tests[testId].timeLimit, "Time limit for this credential reached");
         require(_exists(testId), "Solving test that does not exist");
+        if (_tests[testId].requiredPass != address(0)) {
+            require(RequiredPass(_tests[testId].requiredPass).balanceOf(recipient) > 0, "Solver does not own the required token");
+        }
+
+        // Computing the salt as keccak256(recipient, nonce), where the nonce is the amount of credentials it received
+        uint salt = uint(keccak256(abi.encodePacked(recipient, credentialsContract.balanceOf(recipient))));
+        require(!usedSalts[salt], "Salt was already used");
+        // Voiding this salt
+        usedSalts[salt] = true;
         
+        // Verify solution
+        require(verifierContract.verifyProof(_tests[testId].testType, a, b, c, input, salt), "Invalid proof");
+
         uint256 result;
 
-        if ( _tests[testId].testType == 0 ) {  // Open answers test, providing [results, answerHashesRoot, salt]
-            require(input.length == 3);  // @dev invalid input length
-            require(!usedSalts[input[2]], "Salt was already used");
-            
-            _validateSolving(testId);
+        if ( _tests[testId].testType == 0 ) {  // Open answers test, providing [results, answerHashesRoot]
+            require(input.length == 2);  // @dev invalid input length
 
             // Ensuring the open answer test being solved is the one selected
             require(input[1] == _openAnswersRoot[testId], "Solving for another test");
 
-            // Verify solution and get result
-            require(verifierContract.verifyOpenProof(a, b, c, input), "Invalid proof");
+            // Get result
             result = (input[0] + _tests[testId].nQuestions > 64) ?  // prevent underflow
                 100 * (input[0] + _tests[testId].nQuestions - 64) / _tests[testId].nQuestions
             :
                 0;
             require(result >= _tests[testId].minimumGrade, "Grade is below minimum");
 
-            usedSalts[input[2]] = true;
-
-        } else if ( _tests[testId].testType > 0 && _tests[testId].testType < 100 ) {  // Mixed test, providing [solutionHash, results, answersHashRoot, multipleChoiceSalt, openAnswersSalt]
-            require(input.length == 5);  // @dev invalid input length
-            require(!usedSalts[input[3]] && !usedSalts[input[4]], "Salt was already used");
-
-            _validateSolving(testId);
+        } else if ( _tests[testId].testType > 0 && _tests[testId].testType < 100 ) {  // Mixed test, providing [solutionHash, results, answersHashRoot]
+            require(input.length == 3);  // @dev invalid input length
 
             // Ensuring the open answer test being solved is the one selected
             require(input[2] == _openAnswersRoot[testId], "Solving for another test");
-
-            // Verify solution and get result
-            require(verifierContract.verifyMixedProof(a, b, c, input), "Invalid proof");
 
             // The testType being below 100 means it is a mixed test, and its value represents the weight of the multiple choice test
             result = (input[0] == _multipleChoiceRoot[testId] ? _tests[testId].testType : 0) 
@@ -369,55 +355,26 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
                 );
             require(result >= _tests[testId].minimumGrade, "Grade is below minimum");
 
-            usedSalts[input[3]] = true;
-            usedSalts[input[4]] = true;
+        } else if ( _tests[testId].testType == 100 ) {  // Multiple choice test, providing [solutionHash]
+            require(input.length == 1);  // @dev invalid input length
 
-        } else if ( _tests[testId].testType == 100 ) {  // Multiple choice test, providing [solutionHash, salt]
-            require(input.length == 2);  // @dev invalid input length
-            
-            require(!usedSalts[input[1]], "Salt was already used");
-
-            _validateSolving(testId);
-        
-            // Verify solution and get result
-            require(verifierContract.verifyMultipleProof(a, b, c, input), "Invalid proof");
+            // Get result
             result = 100;
 
             require(input[0] == _multipleChoiceRoot[testId], "Wrong solution");
-
-            usedSalts[input[1]] = true;
 
         } else if ( _tests[testId].testType == 255 ) {
             revert("Test has been deleted and can no longer be solved");
         } 
 
-        if (credentialsContract.getResults(msg.sender, testId) == 0) {
+        if (credentialsContract.getResults(recipient, testId) == 0) {
             // If the user had not received this credential, it increases the number of solvers
             _tests[testId].solvers++;
         } else {
-            require(result > credentialsContract.getResults(msg.sender, testId), "Your existing credential has a better result");
+            require(result > credentialsContract.getResults(recipient, testId), "Your existing credential has a better result");
         }
 
-        credentialsContract.giveCredentials(msg.sender, testId, result);
-
-        // Refunds gas to solver from the testId fund
-        uint256 gasRefund = (gasAtStart - gasleft() + 40000) * tx.gasprice;
-        if (_tests[testId].gasFund >= gasRefund) {
-            _tests[testId].gasFund -= gasRefund;
-            payable(msg.sender).transfer(gasRefund);
-        } 
-    }
-
-    /**
-     * @dev Verifies that the test can be solved by msg.sender
-     */
-    function _validateSolving(uint256 testId) internal view {
-        require(msg.sender != ownerOf(testId), "Test cannot be solved by owner");
-        require(_tests[testId].solvers < _tests[testId].credentialLimit, "Maximum number of credentials reached");
-        require(block.timestamp <= _tests[testId].timeLimit, "Time limit for this credential reached");
-        if (_tests[testId].requiredPass != address(0)) {
-            require(RequiredPass(_tests[testId].requiredPass).balanceOf(msg.sender) > 0, "Solver does not own the required token");
-        }
+        credentialsContract.giveCredentials(recipient, testId, result);
     }
 
     /**
