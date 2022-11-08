@@ -9,13 +9,13 @@ template MixedTest(k, p) {
     // Number of open choice questions, also work as leaves
     var n = 2**p;
 
-    // The multiple choice part of the test requires the leaves in the answers tree and the salt
+    // The multiple choice part of the test requires the leaves in the answers tree
     signal input multipleChoiceAnswers[m];
-    signal input multipleChoiceSalt;
     // The open ended part of the test requires the hashes of the answers as well as the user's answers
     signal input openAnswersHash[n];
     signal input openAnswers[n];
-    signal input openAnswersSalt;
+    // Cryptographic salt, must be stored and voided inside the smart contract once used
+    signal input salt;
 
     // Output signals, the test result is computed at the smart contract level
     signal output solutionHash;
@@ -26,16 +26,16 @@ template MixedTest(k, p) {
     component multipleChoicePart = VerifyMultipleChoiceAnswers(k);
     component openAnswerPart = VerifyOpenAnswers(p);
 
-    // Uses two salts, both will be voided at the smart contract level
-    multipleChoicePart.salt <== multipleChoiceSalt;
-    openAnswerPart.salt <== openAnswersSalt;
+    // Uses a single salt for both components of the test, voided at the smart contract level
+    multipleChoicePart.salt <== salt;
+    openAnswerPart.salt <== salt;
 
-    // Defining the multiple choice part
+    // Filling the multiple choice part
     for (var i = 0; i < m; i++) {
         multipleChoicePart.answers[i] <== multipleChoiceAnswers[i];
     }
 
-    // Defining the open answer part
+    // Filling the open answer part
     for (var i = 0; i < n; i++) {
         openAnswerPart.answersHash[i] <== openAnswersHash[i];
         openAnswerPart.answers[i] <== openAnswers[i];
@@ -47,4 +47,4 @@ template MixedTest(k, p) {
     answersHashRoot <== openAnswerPart.answersHashRoot;
 }
 
-component main {public [multipleChoiceSalt, openAnswersSalt]} = MixedTest(6, 6);
+component main {public [salt]} = MixedTest(6, 6);

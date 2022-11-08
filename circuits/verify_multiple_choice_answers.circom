@@ -1,6 +1,5 @@
 pragma circom 2.0.0;
 
-include "./hasher.circom";
 include "./get_merkle_root.circom";
 
 template VerifyMultipleChoiceAnswers(k) {

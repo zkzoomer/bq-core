@@ -1,6 +1,19 @@
 pragma circom 2.0.0;
 
-include "./hasher.circom";
+include "../node_modules/circomlib/circuits/poseidon.circom";
+
+template HashLeftRight() {
+    signal input left;
+    signal input right;
+
+    signal output digest;
+
+    component hasher = Poseidon(2);
+    hasher.inputs[0] <== left;
+    hasher.inputs[1] <== right;
+
+    digest <== hasher.out;
+}
 
 // Gets the root of a given Merkle tree, where k is its depth
 template GetMerkleRoot(k) {
