@@ -3,8 +3,8 @@ const {
     shouldBehaveLikeERC721,
     shouldBehaveLikeERC721Metadata,
     shouldBehaveLikeERC721Enumerable,
-} = require('./ERC721.behavior');
-const { shouldBehaveLikeCredentials } = require('./Credentials.behavior')
+} = require('./_ERC721.behavior');
+const { shouldBehaveLikeCredentials } = require('./_Credentials.behavior')
 
 const testCreator = artifacts.require('TestCreator')
 const Credentials = artifacts.require('Credentials')

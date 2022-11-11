@@ -148,8 +148,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint8 _testType,
         uint8 _nQuestions,
         uint8 _minimumGrade,
-        uint24 _credentialLimit,
-        uint32 _timeLimit,
+        uint24 _credentialLimit,  // a zero value renders them unlimited
+        uint32 _timeLimit,  
         uint256[] calldata _solvingHashes,
         address _requiredPass,
         string memory _credentialsGained,
@@ -159,8 +159,8 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         _ntests++;
         uint256 _testId = _ntests;
 
-        require(_timeLimit > block.timestamp, "Time limit is in the past");
-        require(_credentialLimit > 0, "Credential limit must be above zero");
+        // If time and credential limits are set to zero then these limits on solving do not get enforced
+        require(_timeLimit > block.timestamp || _timeLimit == 0, "Time limit is in the past");
         if(_requiredPass != address(0)) {
             require(RequiredPass(_requiredPass).balanceOf(msg.sender) >= 0);  // dev: invalid required pass address provided
         }
@@ -306,10 +306,16 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint[2] calldata c,
         uint[] calldata input  
     ) external nonReentrant {
+        /* require(_exists(testId), "Solving test that does not exist"); */  // TODO: already covered on require below ?
         require(recipient != ownerOf(testId), "Test cannot be solved by owner");
-        require(_tests[testId].solvers < _tests[testId].credentialLimit, "Maximum number of credentials reached");
-        require(block.timestamp <= _tests[testId].timeLimit, "Time limit for this credential reached");
-        require(_exists(testId), "Solving test that does not exist");
+        require(
+            _tests[testId].credentialLimit == 0 || _tests[testId].solvers < _tests[testId].credentialLimit, 
+            "Maximum number of credentials reached"
+        );
+        require(
+            _tests[testId].timeLimit == 0 || block.timestamp <= _tests[testId].timeLimit,  
+            "Time limit for this credential reached"
+        );
         if (_tests[testId].requiredPass != address(0)) {
             require(RequiredPass(_tests[testId].requiredPass).balanceOf(recipient) > 0, "Solver does not own the required token");
         }

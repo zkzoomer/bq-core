@@ -1,16 +1,13 @@
 import { ethers } from 'ethers'
+// @ts-ignore
+import { groth16 } from "snarkjs";
+import keccak256 from 'keccak256'
 
-const keccak256 = require('keccak256')
-const snarkjs = require("snarkjs");
-const random = require('random-bigint')
-const fs = require("fs");
-
-import { rootFromLeafArray } from './utils/poseidonMerkle'
-import { Grade, SolutionProof, Stats } from "./types";
+import { Grade, SolutionProof, Stats } from "./types/index";
 import testCreatorAbi from '../artifacts/contracts/TestCreator.sol/TestCreator.json'
 import credentialsAbi from '../artifacts/contracts/Credentials.sol/Credentials.json'
 
-const poseidon = require('./utils/poseidon')
+const { poseidon, rootFromLeafArray } = require ('./utils/poseidon')
 
 export default class bqTest {
     #testId: number
@@ -296,21 +293,31 @@ export default class bqTest {
      * Returns the grade obtained for the given solution in this test 
      * @returns zk proof of the solution.
      */
-    async generateSolutionProof( openAnswers: string[] = [], multipleChoiceAnswers: number[] = [] ): Promise<SolutionProof> {
+    async generateSolutionProof( 
+        recipient: string, 
+        openAnswers: string[] = [], 
+        multipleChoiceAnswers: number[] = [] 
+    ): Promise<SolutionProof> {
+        if ( !ethers.utils.isAddress(recipient) ) {
+            throw new TypeError('Address given for the recipient is not valid')
+        }
         if ( !this.#solveMode ) {
             throw new Error('Test cannot be solved as it was not initialized in solveMode')
         }
+
+        const credentialBalance = (await this.#credentialContract.balanceOf(recipient)).toString()
+        const salt = BigInt(ethers.utils.solidityKeccak256(['address', 'uint256'], [recipient, credentialBalance])).toString()
 
         if ( this.#stats.testType === 0 ) {  // open answers test
             // All answers must be provided - even if an empty ""
             if ( openAnswers.length !== this.#stats.nQuestions ) { throw new RangeError('Some questions were left unanswered') }
 
             // Generating proof and public signals
-            const { proof, publicSignals } = snarkjs.groth16.fullProve(
+            const { proof, publicSignals } = await groth16.fullProve(
                 {
                     answersHash: this.#openAnswersHashes, 
                     answers: getOpenAnswersArray(openAnswers),
-                    salt: random(256).toString() 
+                    salt
                 }, 
                 "../proof/open/open.wasm", 
                 "../proof/open/open.zkey"
@@ -323,7 +330,8 @@ export default class bqTest {
                     [proof.pi_b[1][0].toString(), proof.pi_b[1][1].toString()]
                 ],
                 c: [proof.pi_c[0].toString(), proof.pi_c[1].toString()],
-                input: publicSignals
+                input: publicSignals,
+                recipient
             }
 
         } else if ( this.#stats.testType > 0 && this.#stats.testType < 100 ) {  // mixed test
@@ -335,13 +343,12 @@ export default class bqTest {
             // All open answers must be provided - even if an empty ""
             if ( openAnswers.length !== this.#stats.nQuestions ) { throw new RangeError('Some questions were left unanswered') }
 
-            const { proof, publicSignals } = snarkjs.groth16.fullProve(
+            const { proof, publicSignals } = await groth16.fullProve(
                 {   
                     multipleChoiceAnswers: getMultipleChoiceAnswersArray(multipleChoiceAnswers),
-                    multipleChoiceSalt: random(256).toString() ,
                     openAnswersHash: this.#openAnswersHashes, 
                     openAnswers: getOpenAnswersArray(openAnswers),
-                    openAnswersSalt: random(256).toString()   
+                    salt
                 }, 
                 "../proof/mixed/mixed_test.wasm", 
                 "../proof/mixed/mixed.zkey"
@@ -354,7 +361,8 @@ export default class bqTest {
                     [proof.pi_b[1][0].toString(), proof.pi_b[1][1].toString()]
                 ],
                 c: [proof.pi_c[0].toString(), proof.pi_c[1].toString()],
-                input: publicSignals
+                input: publicSignals,
+                recipient
             }
 
         } else if ( this.#stats.testType === 100 ) {  // multiple choice test
@@ -365,10 +373,10 @@ export default class bqTest {
             if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
             
             // Generating proof and public signals
-            const { proof, publicSignals } = snarkjs.groth16.fullProve(
+            const { proof, publicSignals } = await groth16.fullProve(
                 {
                     answers: getMultipleChoiceAnswersArray(multipleChoiceAnswers),  
-                    salt: random(256).toString()
+                    salt
                 }, 
                 "../proof/multiple/multiple.wasm", 
                 "../proof/multiple/multiple.zkey"
@@ -381,7 +389,8 @@ export default class bqTest {
                     [proof.pi_b[1][0].toString(), proof.pi_b[1][1].toString()]
                 ],
                 c: [proof.pi_c[0].toString(), proof.pi_c[1].toString()],
-                input: publicSignals
+                input: publicSignals,
+                recipient
             }
 
         } else {  // test was invalidated
@@ -425,13 +434,17 @@ export default class bqTest {
             throw new Error('Test is invalidated and cannot be solved')
         }
 
-        return snarkjs.groth16.verify(
+        return groth16.verify(
             vkey,
             proof.input,
             proofToSnarkjs(proof.a, proof.b, proof.c)
         )
 
-        function proofToSnarkjs(a, b, c) {
+        function proofToSnarkjs(
+            a: [string, string],
+            b: [[string, string], [string, string]], 
+            c: [string, string]
+        ) {
             return {
                 pi_a: [
                     a[0], a[1], '1'
@@ -461,10 +474,11 @@ export default class bqTest {
         
         return this.#testCreatorContract.populateTransaction.solveTest(
             this.#testId,
+            proof.recipient,
             proof.a,
             [[proof.b[0][1], proof.b[0][0]], [proof.b[1][1], proof.b[1][0]]],  // Order changes on the verifier smart contract
             proof.c,
-            proof.input
+            proof.input.slice(0, -1)  // salt is computed at smart contract level using the specified recipient
         )
     }
 

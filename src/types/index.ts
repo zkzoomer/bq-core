@@ -25,5 +25,6 @@ export type SolutionProof = {
     a: [string, string],
     b: [[string, string], [string, string]],
     c: [string, string],
-    input: string[]
+    input: string[],
+    recipient: string
 }
