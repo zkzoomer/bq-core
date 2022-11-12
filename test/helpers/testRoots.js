@@ -1,5 +1,4 @@
 import keccak256 from 'keccak256'
-import { ethers } from 'ethers'
 
 import { poseidon, rootFromLeafArray } from "../../src/utils/poseidon.js"
 

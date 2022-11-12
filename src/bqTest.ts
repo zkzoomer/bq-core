@@ -6,8 +6,12 @@ import keccak256 from 'keccak256'
 import { Grade, SolutionProof, Stats } from "./types/index";
 import testCreatorAbi from '../artifacts/contracts/TestCreator.sol/TestCreator.json'
 import credentialsAbi from '../artifacts/contracts/Credentials.sol/Credentials.json'
+import { poseidon, rootFromLeafArray } from './utils/poseidon'
 
-const { poseidon, rootFromLeafArray } = require ('./utils/poseidon')
+// Verification keys
+import openVerificationKey from "../proof/open/open_verification_key.json"
+import mixedVerificationKey from "../proof/mixed/mixed_verification_key.json"
+import multipleVerificationKey from "../proof/multiple/multiple_verification_key.json"
 
 export default class bqTest {
     #testId: number
@@ -425,11 +429,11 @@ export default class bqTest {
 
         let vkey
         if ( this.#stats.testType === 0 ) { 
-            vkey = require("../proof/open/open_verification_key.json")
+            vkey = openVerificationKey
         } else if ( this.#stats.testType > 0 && this.#stats.testType < 100 ) {
-            vkey = require("../proof/mixed/mixed_verification_key.json")
+            vkey = mixedVerificationKey
         } else if ( this.#stats.testType === 100 ) {
-            vkey = require("../proof/multiple/multiple_verification_key.json")
+            vkey = multipleVerificationKey
         } else {
             throw new Error('Test is invalidated and cannot be solved')
         }
