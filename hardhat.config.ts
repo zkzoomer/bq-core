@@ -1,3 +1,4 @@
+import { HardhatUserConfig } from "hardhat/config";
 require("@nomiclabs/hardhat-waffle");
 require('@nomiclabs/hardhat-truffle5');
 require('hardhat-contract-sizer');
@@ -7,7 +8,7 @@ const fs = require('fs');
 const mnemonic = fs.readFileSync(".secret").toString().trim();
 
 /** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+const config: HardhatUserConfig  = {
   solidity: "0.8.9",
   networks: {
     mumbai_testnet: {
@@ -25,3 +26,5 @@ module.exports = {
     gasPrice: 1000,  // Absolute worst case scenario sizing
   },
 };
+
+export default config
