@@ -1,6 +1,6 @@
-import keccak256 from 'keccak256'
+const keccak256 = require('keccak256')
 
-import { poseidon, rootFromLeafArray } from "../../src/utils/poseidon.js"
+const { poseidon, rootFromLeafArray } = require("../../src/poseidon.js")
 
 // Hereon we define a series of tests to be used when testing the smart contracts / scripts
 
@@ -8,8 +8,8 @@ import { poseidon, rootFromLeafArray } from "../../src/utils/poseidon.js"
 const leafArrayA = Array.from({length: 64}, (_, i) => 1)
 const leafArrayB = Array.from({length: 64}, (_, i) => 2)
 
-export const multipleChoiceRootA = rootFromLeafArray(leafArrayA)
-export const multipleChoiceRootB = rootFromLeafArray(leafArrayB)
+const multipleChoiceRootA = rootFromLeafArray(leafArrayA)
+const multipleChoiceRootB = rootFromLeafArray(leafArrayB)
 
 // open answer test
 const answerHashesA = Array(64).fill(
@@ -23,5 +23,14 @@ const answerHashesB = new Array(64).fill(
     poseidon([BigInt('0x' + keccak256("deenz").toString('hex'))])
 );
 
-export const openAnswersRootA = rootFromLeafArray(answerHashesA)
-export const openAnswersRootB = rootFromLeafArray(answerHashesB)
+const openAnswersRootA = rootFromLeafArray(answerHashesA)
+const openAnswersRootB = rootFromLeafArray(answerHashesB)
+
+module.exports = {
+    multipleChoiceRootA,
+    multipleChoiceRootB,
+    answerHashesA,
+    answerHashesB,
+    openAnswersRootA,
+    openAnswersRootB
+}

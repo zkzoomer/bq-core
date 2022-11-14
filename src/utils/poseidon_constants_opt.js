@@ -1,4 +1,4 @@
-export const poseidonConstants = {
+const poseidonConstants = {
     "C": [
      [
       "0x9c46e9ec68e9bd4fe1faaba294cba38a71aa177534cdd1b6c7dc0dbd0abd7a7",
@@ -24804,3 +24804,5 @@ export const poseidonConstants = {
      ]
     ]
 }
+
+module.exports = poseidonConstants

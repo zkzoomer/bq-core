@@ -1,4 +1,4 @@
-import { HardhatUserConfig } from "hardhat/config";
+
 require("@nomiclabs/hardhat-waffle");
 require('@nomiclabs/hardhat-truffle5');
 require('hardhat-contract-sizer');
@@ -8,7 +8,7 @@ const fs = require('fs');
 const mnemonic = fs.readFileSync(".secret").toString().trim();
 
 /** @type import('hardhat/config').HardhatUserConfig */
-const config: HardhatUserConfig  = {
+module.exports = {
   solidity: "0.8.9",
   networks: {
     mumbai_testnet: {
@@ -25,6 +25,7 @@ const config: HardhatUserConfig  = {
     coinmarketcap: '7b5edf80-0e66-464e-81f2-a07fcc725a4b',  // Keys in production 🤯?????
     gasPrice: 1000,  // Absolute worst case scenario sizing
   },
+  mocha: {
+    timeout: 100000000  // proof generation done all in one batch, can be slow
+  },
 };
-
-export default config

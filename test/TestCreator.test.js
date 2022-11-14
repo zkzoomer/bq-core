@@ -1,4 +1,4 @@
-const { ethers, artifacts } = require("hardhat");
+/* const { ethers, artifacts } = require("hardhat");
 const {
     shouldBehaveLikeERC721,
     shouldBehaveLikeERC721Metadata,
@@ -22,7 +22,7 @@ contract('testCreator', function (accounts) {
 
         this.testCreator = await testCreator.new()
         const _credentials = await this.testCreator.credentialsContract()
-        /* this.credentials = (new ethers.Contract(_credentials, credentialsAbi)).deployed() */
+
         this.credentials = await Credentials.at(_credentials)
 
         this.valid = await Valid.new('Valid', 'VALID')
@@ -35,4 +35,4 @@ contract('testCreator', function (accounts) {
     shouldBehaveLikeERC721Metadata('ERC721', name, symbol, ...accounts);
     shouldBehaveLikeERC721Enumerable('ERC721', ...accounts)
     shouldBehaveLikeTestCreator(...accounts)
-})
+}) */

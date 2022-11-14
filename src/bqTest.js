@@ -1,47 +1,50 @@
-import { ethers } from 'ethers'
-// @ts-ignore
-import { groth16 } from "snarkjs";
-import keccak256 from 'keccak256'
+const { ethers } = require('ethers')
+const { groth16 } = require("snarkjs")
+const keccak256 = require('keccak256')
+const { readFileSync } = require ('fs')
 
-import { Grade, SolutionProof, Stats } from "./types/index";
-import testCreatorAbi from '../artifacts/contracts/TestCreator.sol/TestCreator.json'
-import credentialsAbi from '../artifacts/contracts/Credentials.sol/Credentials.json'
-import { poseidon, rootFromLeafArray } from './utils/poseidon'
+const { poseidon, rootFromLeafArray } = require('./poseidon.js')
+
+// Contract interfaces
+/* const testCreatorAbi = JSON.parse(readFileSync('../artifacts/contracts/TestCreator.sol/TestCreator.json').toString())
+const credentialsAbi = JSON.parse(readFileSync('../artifacts/contracts/Credentials.sol/Credentials.json').toString()) */
+const testCreatorAbi = require('../artifacts/contracts/TestCreator.sol/TestCreator.json')
+const credentialsAbi = require ('../artifacts/contracts/Credentials.sol/Credentials.json')
 
 // Verification keys
-import openVerificationKey from "../proof/open/open_verification_key.json"
-import mixedVerificationKey from "../proof/mixed/mixed_verification_key.json"
-import multipleVerificationKey from "../proof/multiple/multiple_verification_key.json"
+const openVerificationKey = require("../proof/open/open_verification_key.json")
+const mixedVerificationKey = require("../proof/mixed/mixed_verification_key.json")
+const multipleVerificationKey = require("../proof/multiple/multiple_verification_key.json")
 
-export default class bqTest {
-    #testId: number
-    #isValid: boolean
-    #solveMode: boolean
-    #stats: Stats
-    #testURI: string
+class bqTest {
+    #testId
+    #isValid
+    #solveMode
+    #stats
+    #testURI
 
     // Test defining hashes
     #multipleChoiceRoot = ""
-    #openAnswersHashes: string[]
+    #openAnswersHashes
 
     // Deployed contracts
-    #testCreatorContract: ethers.Contract
-    #credentialContract: ethers.Contract
+    #testCreatorContract
+    #credentialContract
 
     /**
      * Initializes and returns a new bqTest object
      * @returns new bqTest object
      */
-    private constructor ( 
-        testId: number,
-        isValid: boolean,
-        solveMode: boolean,
-        stats: Stats,
-        testURI: string,
-        testCreatorContract: ethers.Contract,
-        credentialContract: ethers.Contract,
-        multipleChoiceRoot: string = "",
-        openAnswerHashes: string[] = [],
+    constructor ( 
+        testId,
+        isValid,
+        solveMode,
+        stats,
+        testURI,
+        testCreatorContract,
+        credentialContract,
+        multipleChoiceRoot= "",
+        openAnswerHashes= [],
     ) {
         this.#testId = testId
         this.#isValid = isValid
@@ -64,12 +67,11 @@ export default class bqTest {
      * @returns new bqTest object in readMode
      */
     static async readMode (
-        testId: number,
-        ethersProvider: ethers.providers.JsonRpcProvider,
-        testCreatorAddress: string,
-        credentialsAddress: string
+        testId,
+        ethersProvider,
+        testCreatorAddress
     ) {
-        const data = await bqTest.loadData(testId, ethersProvider, testCreatorAddress, credentialsAddress)
+        const data = await bqTest.#loadData(testId, ethersProvider, testCreatorAddress)
 
         return new bqTest(
             testId, 
@@ -88,13 +90,12 @@ export default class bqTest {
      * @returns new bqTest object in solveMode
      */
     static async solveMode (
-        testId: number,
-        ethersProvider: ethers.providers.JsonRpcProvider,
-        testCreatorAddress: string,
-        credentialsAddress: string,
-        openAnswersHashes: string[] = null as any,
+        testId,
+        ethersProvider,
+        testCreatorAddress,
+        openAnswersHashes = null,
     ) {
-        const data = await bqTest.loadData(testId, ethersProvider, testCreatorAddress, credentialsAddress)
+        const data = await bqTest.#loadData(testId, ethersProvider, testCreatorAddress)
 
         var openAnswersRoot = ""
         var multipleChoiceRoot = ""
@@ -134,7 +135,7 @@ export default class bqTest {
         return new bqTest(
             testId, 
             data.isValid, 
-            false,
+            true,
             data.stats, 
             data.testURI, 
             data.testCreatorContract, 
@@ -148,13 +149,13 @@ export default class bqTest {
      * Loads and returns the data that is needed for both reading mode and solving mode test objects
      * @returns data needed to initialize test objects
      */
-    private static async loadData(
-        testId: number,
-        ethersProvider: ethers.providers.JsonRpcProvider,
-        testCreatorAddress: string,
-        credentialsAddress: string,
+    static async #loadData(
+        testId,
+        ethersProvider,
+        testCreatorAddress,
     ) {
         const testCreatorContract = new ethers.Contract(testCreatorAddress, testCreatorAbi.abi, ethersProvider)
+        const credentialsAddress = await testCreatorContract.credentialsContract()
         const credentialsContract = new ethers.Contract(credentialsAddress, credentialsAbi.abi, ethersProvider)
         const stats = await testCreatorContract.getTest(testId)
         const testURI = await testCreatorContract.tokenURI(testId)
@@ -174,23 +175,23 @@ export default class bqTest {
      * Returns the grade obtained for the given solution in this test 
      * @returns grade and correct answers obtained for the given solution.
      */
-    gradeSolution( openAnswers: string[] = [], multipleChoiceAnswers: number[] = [] ): Grade {
+    gradeSolution( openAnswers = [], multipleChoiceAnswers = [] ) {
         if ( !this.#solveMode ) {
             throw new Error('Test cannot be solved as it was not initialized in solveMode')
         }
 
-        const getMultipleChoiceAnswersResult = ( multipleChoiceAnswers: number[] ): number => {
+        const getMultipleChoiceAnswersResult = ( multipleChoiceAnswers ) => {
             // Filling the array to 64 values
             const answersArray = new Array(64).fill(0)
             answersArray.forEach( (_, i) => { if ( i < multipleChoiceAnswers.length ) { 
-                answersArray[i] = multipleChoiceAnswers[i] as number 
+                answersArray[i] = multipleChoiceAnswers[i] 
             }})
     
             // Checking if test is passed and returning the result
             return rootFromLeafArray(answersArray) === this.#multipleChoiceRoot ? 100 : 0
         }
 
-        const getOpenAnswersResult = ( openAnswers: string[] ): { nCorrect: number, resultsArray: boolean[], testResult: number } => {
+        const getOpenAnswersResult = ( openAnswers ) => {
             let nCorrect = 0
             const resultsArray = new Array(openAnswers.length).fill(false)
             for (var i = 0; i < 64; i++) {
@@ -237,7 +238,7 @@ export default class bqTest {
 
         } else if ( this.#stats.testType > 0 && this.#stats.testType < 100 ) {  // mixed test
             // Multiple choice answers provided must be numbers and less than 64 in number
-            if ( !(multipleChoiceAnswers as any[]).every(i => { return typeof i === 'number' }) ) { 
+            if ( !(multipleChoiceAnswers).every(i => { return typeof i === 'number' }) ) { 
                 throw new TypeError('Answers must be numbers representing the multiple choices') 
             }
             if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
@@ -270,7 +271,7 @@ export default class bqTest {
 
         } else if ( this.#stats.testType === 100 ) {  // multiple choice test
             // Answers provided must be numbers and less than 64 in number
-            if ( !(multipleChoiceAnswers as any[]).every(i => { return typeof i === 'number' }) ) { 
+            if ( !(multipleChoiceAnswers).every(i => { return typeof i === 'number' }) ) { 
                 throw new TypeError('Answers must be numbers representing the multiple choices') 
             }
             if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
@@ -298,10 +299,10 @@ export default class bqTest {
      * @returns zk proof of the solution.
      */
     async generateSolutionProof( 
-        recipient: string, 
-        openAnswers: string[] = [], 
-        multipleChoiceAnswers: number[] = [] 
-    ): Promise<SolutionProof> {
+        recipient, 
+        openAnswers = [], 
+        multipleChoiceAnswers = [] 
+    ) {
         if ( !ethers.utils.isAddress(recipient) ) {
             throw new TypeError('Address given for the recipient is not valid')
         }
@@ -323,8 +324,8 @@ export default class bqTest {
                     answers: getOpenAnswersArray(openAnswers),
                     salt
                 }, 
-                "../proof/open/open.wasm", 
-                "../proof/open/open.zkey"
+                "./proof/open/open.wasm", 
+                "./proof/open/open.zkey"
             );
 
             return {
@@ -340,10 +341,10 @@ export default class bqTest {
 
         } else if ( this.#stats.testType > 0 && this.#stats.testType < 100 ) {  // mixed test
             // Multiple choice answers provided must be numbers and less than 64 in number
-            if ( !(multipleChoiceAnswers as any[]).every(i => { return typeof i === 'number' }) ) { 
+            if ( !(multipleChoiceAnswers).every(i => { return typeof i === 'number' }) ) { 
                 throw new TypeError('Answers must be numbers representing the multiple choices') 
             }
-            if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
+            if ( multipleChoiceAnswers.length > 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
             // All open answers must be provided - even if an empty ""
             if ( openAnswers.length !== this.#stats.nQuestions ) { throw new RangeError('Some questions were left unanswered') }
 
@@ -354,8 +355,8 @@ export default class bqTest {
                     openAnswers: getOpenAnswersArray(openAnswers),
                     salt
                 }, 
-                "../proof/mixed/mixed_test.wasm", 
-                "../proof/mixed/mixed.zkey"
+                "./proof/mixed/mixed.wasm", 
+                "./proof/mixed/mixed.zkey"
             );
 
             return {
@@ -371,10 +372,10 @@ export default class bqTest {
 
         } else if ( this.#stats.testType === 100 ) {  // multiple choice test
             // Answers provided must be numbers and less than 64 in number
-            if ( !(multipleChoiceAnswers as any[]).every(i => { return typeof i === 'number' }) ) { 
+            if ( !(multipleChoiceAnswers).every(i => { return typeof i === 'number' }) ) { 
                 throw new TypeError('Answers must be numbers representing the multiple choices') 
             }
-            if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
+            if ( multipleChoiceAnswers.length > 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
             
             // Generating proof and public signals
             const { proof, publicSignals } = await groth16.fullProve(
@@ -382,8 +383,8 @@ export default class bqTest {
                     answers: getMultipleChoiceAnswersArray(multipleChoiceAnswers),  
                     salt
                 }, 
-                "../proof/multiple/multiple.wasm", 
-                "../proof/multiple/multiple.zkey"
+                "./proof/multiple/multiple.wasm", 
+                "./proof/multiple/multiple.zkey"
             );
 
             return {
@@ -401,15 +402,15 @@ export default class bqTest {
             throw new Error('Test is invalidated and cannot be solved')
         }
         
-        function getMultipleChoiceAnswersArray(multipleChoiceAnswers: number[]): number[] {
+        function getMultipleChoiceAnswersArray(multipleChoiceAnswers) {
             const answersArray = new Array(64).fill(0)
             answersArray.forEach( (_, i) => { if ( i < multipleChoiceAnswers.length ) { 
-                answersArray[i] = multipleChoiceAnswers[i] as number 
+                answersArray[i] = multipleChoiceAnswers[i] 
             }})
             return answersArray
         }
 
-        function getOpenAnswersArray( openAnswers: string[] ): string[] {
+        function getOpenAnswersArray( openAnswers ) {
             const resultsArray = new Array(64).fill(
                 poseidon([BigInt('0x' + keccak256("").toString('hex'))]).toString()
             )
@@ -422,7 +423,7 @@ export default class bqTest {
      * Verifies that the solution proof given will be accepted by the smart contract
      * @returns if the zk proof of the solution is valid.
      */
-    async verifySolutionProof(proof: SolutionProof): Promise<boolean> {
+    async verifySolutionProof(proof) {
         if ( !this.#solveMode ) {
             throw new Error('Test cannot be solved as it was not initialized in solveMode')
         }
@@ -438,16 +439,16 @@ export default class bqTest {
             throw new Error('Test is invalidated and cannot be solved')
         }
 
-        return groth16.verify(
+        return await groth16.verify(
             vkey,
             proof.input,
             proofToSnarkjs(proof.a, proof.b, proof.c)
         )
 
         function proofToSnarkjs(
-            a: [string, string],
-            b: [[string, string], [string, string]], 
-            c: [string, string]
+            a,
+            b, 
+            c
         ) {
             return {
                 pi_a: [
@@ -471,7 +472,7 @@ export default class bqTest {
      * Generates the transaction object to be signed with the given solution attempt
      * @returns the solving transaction object to be signed
      */
-    generateSolutionTransaction(proof: SolutionProof): Promise<ethers.UnsignedTransaction> {
+    generateSolutionTransaction(proof) {
         if ( !this.#solveMode ) {
             throw new Error('Test cannot be solved as it was not initialized in solveMode')
         }
@@ -490,7 +491,7 @@ export default class bqTest {
      * Returns the stats for this test, that is, the Test struct for this test
      * @returns Test struct.
      */
-    get stats(): Stats {
+    get stats() {
         return this.#stats
     }
 
@@ -498,7 +499,7 @@ export default class bqTest {
      * Returns whether this test is solvable or not
      * @returns if test is valid.
      */
-    get isValid(): boolean {
+    get isValid() {
         return this.#isValid
     }
 
@@ -506,7 +507,7 @@ export default class bqTest {
      * Returns whether this test URI
      * @returns test URI.
      */
-    get URI(): string {
+    get URI() {
         return this.#testURI
     }
 
@@ -514,7 +515,7 @@ export default class bqTest {
      * Returns the total number of holders for this credential 
      * @returns number of holders.
      */
-    get holdersNumber(): number {
+    get holdersNumber() {
         return this.#stats.solvers
     }
 
@@ -522,7 +523,7 @@ export default class bqTest {
      * Returns the total number of holders for this credential 
      * @returns number of holders.
      */
-    async holdersList(): Promise<string[]> {
+    async holdersList() {
         return this.#credentialContract.credentialReceivers(this.#testId)
     }
 
@@ -530,11 +531,15 @@ export default class bqTest {
      * Returns if an address has solved this test and thus holds the credential
      * @returns test URI.
      */
-    async holdsCredential(address: string): Promise<boolean> {
+    async holdsCredential(address) {
         const addy = ethers.utils.getAddress(address)
         const holders = this.holdersList()
 
         return addy in holders
     }
 
+}
+
+module.exports = {
+    bqTest
 }

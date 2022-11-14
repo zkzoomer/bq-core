@@ -1,7 +1,7 @@
-import assert from 'node:assert/strict';
-import { Scalar, ZqField, utils } from "ffjavascript";
+const assert = require('node:assert/strict');
+const { Scalar, ZqField, utils } = require("ffjavascript");
 
-import { poseidonConstants } from './poseidon_constants_opt.js'
+const poseidonConstants = require('./utils/poseidon_constants_opt')
 
 // const F = new ZqField(Scalar.fromString("0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"));  // bls
 const F = new ZqField(Scalar.fromString("21888242871839275222246405745257275088548364400416034343698204186575808495617")); // bn128
@@ -18,7 +18,7 @@ const N_ROUNDS_P = [56, 57, 56, 60, 60, 63, 64, 63, 60, 66, 60, 65, 70, 60, 64, 
 
 const pow5 = a => F.mul(a, F.square(F.square(a, a)));
 
-export function poseidon(inputs) {
+function poseidon(inputs) {
     assert(inputs.length > 0);
     assert(inputs.length < N_ROUNDS_P.length - 1);
 
@@ -88,7 +88,7 @@ function pairwiseHash(array) {
     }
 }
 
-export function rootFromLeafArray(leafArray) {
+function rootFromLeafArray(leafArray) {
     const depth = Math.log(leafArray.length) / Math.log(2)
     const tree = Array(depth);
     tree[depth - 1] = pairwiseHash(leafArray)
@@ -98,4 +98,9 @@ export function rootFromLeafArray(leafArray) {
 
     // return treeRoot[depth-1]
     return tree[0][0]
+}
+
+module.exports = {
+    poseidon,
+    rootFromLeafArray
 }

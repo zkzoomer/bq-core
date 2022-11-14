@@ -1,6 +1,6 @@
 // Used for a rough benchmarking of bruteforcing a test
 
-const poseidon = require("./utils/poseidon");
+const poseidon = require("./poseidon");
 const {performance} = require('perf_hooks');
 
 function pairwiseHash (array) {
