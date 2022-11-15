@@ -169,7 +169,6 @@ class bqTest {
             credentialsContract
         }
     }
-
     
     /**
      * Returns the grade obtained for the given solution in this test 
@@ -474,19 +473,28 @@ class bqTest {
      * Generates the transaction object to be signed with the given solution attempt
      * @returns the solving transaction object to be signed
      */
-    generateSolutionTransaction( proof ) {
+    async sendSolutionTransaction( signer, proof ) {
         if ( !this.#solveMode ) {
             throw new Error('Test cannot be solved as it was not initialized in solveMode')
         }
-        
-        return this.#testCreatorContract.populateTransaction.solveTest(
-            this.#testId,
-            proof.recipient,
-            proof.a,
-            [[proof.b[0][1], proof.b[0][0]], [proof.b[1][1], proof.b[1][0]]],  // Order changes on the verifier smart contract
-            proof.c,
-            proof.input.slice(0, -1)  // salt is computed at smart contract level using the specified recipient
+
+        const signerContract = new ethers.Contract(
+            this.testCreatorContract.address, testCreatorAbi.abi, signer
         )
+
+        // TODO: set manual gas so that tx fails if not correct proof
+        try {
+            await signerContract.solveTest(
+                this.#testId,
+                proof.recipient,
+                proof.a,
+                [[proof.b[0][1], proof.b[0][0]], [proof.b[1][1], proof.b[1][0]]],  // Order changes on the verifier smart contract
+                proof.c,
+                proof.input.slice(0, -1)  // salt is computed at smart contract level using the specified recipient
+            )
+        } catch (err) {
+            throw new Error('Transaction could not go through')
+        }
     }
 
     /**
