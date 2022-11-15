@@ -17,19 +17,15 @@ const multipleChoiceAnswersA = Array.from({length: 64}, (_, i) => 1)
 const multipleChoiceAnswersB = Array.from({length: 64}, (_, i) => 2)
 
 const openAnswersA = [
-    BigInt('0x' + keccak256("sneed's").toString('hex')),
-    BigInt('0x' + keccak256('feed').toString('hex')),
-    BigInt('0x' + keccak256('seed').toString('hex'))
+    "sneed's",
+    'feed',
+    'seed'
 ]
 
-const openAnswersB = new Array(64).fill(
-    BigInt('0x' + keccak256("deenz").toString('hex'))
-);
-openAnswersB[0] = BigInt('0x' + keccak256("tree").toString('hex'))
-openAnswersB[0] = BigInt('0x' + keccak256("fiddy").toString('hex'))
-const altOpenAnswersB = new Array(64).fill(
-    BigInt('0x' + keccak256("deenz").toString('hex'))
-);
+const openAnswersB = new Array(64).fill("deenz")
+openAnswersB[0] = "tree"
+openAnswersB[1] = "fiddy"
+const altOpenAnswersB = new Array(64).fill("deenz")
 
 // Generates all the necessary proof objects used for performing the smart contract tests
 // Contract needs to be deployed once to generate these
@@ -53,43 +49,136 @@ async function generateProofs (testCreatorContract, ethersProvider, accounts) {
     await testCreatorContract.createTest(50, 64, 1, 0, 0, [multipleChoiceRootB, openAnswersRootB], ZERO_ADDY, fillText, fillText)
     const mixedB = await bqTest.solveMode(6, ethersProvider, testCreatorContract.address, answerHashesB)
 
-    // TODO: test the `gradeSolution` function here
+    /* gradeSolution function */
+    // multipleA
+    const gradeMultipleA = multipleA.gradeSolution({ multipleChoiceAnswers : multipleChoiceAnswersA })
+    expect(gradeMultipleA).to.deep.equal({
+        grade: 100,
+        minimumGrade: 100,
+        pass: true,
+        nQuestions: 1,
+        multipleChoiceGrade: 100,
+        openAnswerGrade: 0,
+        multipleChoiceWeight: 100,
+        openAnswerResults: [],
+    })
+    const gradeMultipleB = multipleB.gradeSolution({ multipleChoiceAnswers : multipleChoiceAnswersB })
+    expect(gradeMultipleB).to.deep.equal({
+        grade: 100,
+        minimumGrade: 100,
+        pass: true,
+        nQuestions: 1,
+        multipleChoiceGrade: 100,
+        openAnswerGrade: 0,
+        multipleChoiceWeight: 100,
+        openAnswerResults: [],
+    })
     
+    // openA
+    const gradeOpenA = openA.gradeSolution({ openAnswers: openAnswersA })
+    expect(gradeOpenA).to.deep.equal({
+        grade: 100,
+        minimumGrade: 1,
+        pass: true,
+        nQuestions: 3,
+        multipleChoiceGrade: 0,
+        openAnswerGrade: 100,
+        multipleChoiceWeight: 0,
+        openAnswerResults: Array.from({length: 3}, (_, i) => true),
+    })
+    // openB
+    const gradeOpenB = openB.gradeSolution({ openAnswers: openAnswersB })
+    expect(gradeOpenB).to.deep.equal({
+        grade: 100 * 62 / 64,
+        minimumGrade: 1,
+        pass: true,
+        nQuestions: 64,
+        multipleChoiceGrade: 0,
+        openAnswerGrade: 100 * 62 / 64,
+        multipleChoiceWeight: 0,
+        openAnswerResults: Array.from({length: 64}, (_, i) => (i < 2) ? false : true ),
+    })
+    const altGradeOpenB = openB.gradeSolution({ openAnswers: altOpenAnswersB })
+    expect(altGradeOpenB).to.deep.equal({
+        grade: 100,
+        minimumGrade: 1,
+        pass: true,
+        nQuestions: 64,
+        multipleChoiceGrade: 0,
+        openAnswerGrade: 100,
+        multipleChoiceWeight: 0,
+        openAnswerResults: Array.from({length: 64}, (_, i) => true ),
+    })
+
+    // mixedA
+    const gradeMixedA = mixedA.gradeSolution({ openAnswers: openAnswersA, multipleChoiceAnswers: multipleChoiceAnswersA })
+    expect(gradeMixedA).to.deep.equal({
+        grade: 100,
+        minimumGrade: 1,
+        pass: true,
+        nQuestions: 3,
+        multipleChoiceGrade: 100,
+        openAnswerGrade: 100,
+        multipleChoiceWeight: 50,
+        openAnswerResults: Array.from({length: 3}, (_, i) => true ),
+    })
+    // mixedB
+    const gradeMixedB = mixedB.gradeSolution({ openAnswers: openAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB })
+    expect(gradeMixedB).to.deep.equal({
+        grade: 50 + 50 * 62 / 64,
+        minimumGrade: 1,
+        pass: true,
+        nQuestions: 64,
+        multipleChoiceGrade: 100,
+        openAnswerGrade: 100 * 62 / 64,
+        multipleChoiceWeight: 50,
+        openAnswerResults: Array.from({length: 64}, (_, i) => (i < 2) ? false : true ),
+    })
+    const altGradeMixedB = mixedB.gradeSolution({ openAnswers: altOpenAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB })
+    expect(altGradeMixedB).to.deep.equal({
+        grade: 100,
+        minimumGrade: 1,
+        pass: true,
+        nQuestions: 64,
+        multipleChoiceGrade: 100,
+        openAnswerGrade: 100,
+        multipleChoiceWeight: 50,
+        openAnswerResults: Array.from({length: 64}, (_, i) => true ),
+    })
+
     // TODO: revisit which accounts generate which proofs for when testing all them smart contracts
     // multipleA
-    const proofMultipleA = await multipleA.generateSolutionProof(accounts[2], multipleChoiceAnswers = multipleChoiceAnswersA)
+    const proofMultipleA = await multipleA.generateSolutionProof({ recipient: accounts[2], multipleChoiceAnswers: multipleChoiceAnswersA })
     expect( await multipleA.verifySolutionProof(proofMultipleA) ).to.be.true
-    const altProofMultipleA = await multipleA.generateSolutionProof(accounts[3], multipleChoiceAnswers = multipleChoiceAnswersA)
+    const altProofMultipleA = await multipleA.generateSolutionProof({ recipient: accounts[3], multipleChoiceAnswers: multipleChoiceAnswersA })
     expect( await multipleA.verifySolutionProof(altProofMultipleA) ).to.be.true
     // multipleB
-    const proofMultipleB = await multipleB.generateSolutionProof(accounts[2], multipleChoiceAnswers = multipleChoiceAnswersB)
+    const proofMultipleB = await multipleB.generateSolutionProof({ recipient: accounts[2], multipleChoiceAnswers: multipleChoiceAnswersB })
     expect( await multipleB.verifySolutionProof(proofMultipleB) ).to.be.true
-    const altProofMultipleB = await multipleB.generateSolutionProof(accounts[3], multipleChoiceAnswers = multipleChoiceAnswersB)
+    const altProofMultipleB = await multipleB.generateSolutionProof({ recipient: accounts[3], multipleChoiceAnswers: multipleChoiceAnswersB })
     expect( await multipleB.verifySolutionProof(altProofMultipleB) ).to.be.true
 
     // openA
-    const proofOpenA = await openA.generateSolutionProof(accounts[2], openAnswers = openAnswersA)
+    const proofOpenA = await openA.generateSolutionProof({ recipient: accounts[2], openAnswers: openAnswersA })
     expect( await openA.verifySolutionProof(proofOpenA) ).to.be.true
-    const altProofOpenA = await openA.generateSolutionProof(accounts[3], openAnswers = openAnswersA)
+    const altProofOpenA = await openA.generateSolutionProof({ recipient: accounts[3], openAnswers: openAnswersA })
     expect( await openA.verifySolutionProof(altProofOpenA) ).to.be.true
     // openB
-    const proofOpenB = await openB.generateSolutionProof(accounts[2], openAnswers = openAnswersB)
+    const proofOpenB = await openB.generateSolutionProof({ recipient: accounts[2], openAnswers: openAnswersB })
     expect( await openB.verifySolutionProof(proofOpenB) ).to.be.true
-    const altProofOpenB = await openB.generateSolutionProof(accounts[3], openAnswers = altOpenAnswersB)
+    const altProofOpenB = await openB.generateSolutionProof({ recipient: accounts[3], openAnswers: altOpenAnswersB })
     expect( await openB.verifySolutionProof(altProofOpenB) ).to.be.true
 
     // mixedA
-    const proofMixedA = await mixedA.generateSolutionProof(accounts[2], openAnswers = openAnswersA, multipleChoiceAnswers = multipleChoiceAnswersA)
+    const proofMixedA = await mixedA.generateSolutionProof({ recipient: accounts[2], openAnswers: openAnswersA, multipleChoiceAnswers: multipleChoiceAnswersA })
     expect( await mixedA.verifySolutionProof(proofMixedA) ).to.be.true
-    const altProofMixedA = await mixedA.generateSolutionProof(accounts[3], openAnswers = openAnswersA, multipleChoiceAnswers = multipleChoiceAnswersA)
+    const altProofMixedA = await mixedA.generateSolutionProof({ recipient: accounts[3], openAnswers: openAnswersA, multipleChoiceAnswers: multipleChoiceAnswersA })
     expect( await mixedA.verifySolutionProof(altProofMixedA) ).to.be.true
     // mixedB
-    const proofMixedB = await mixedB.generateSolutionProof(accounts[2], openAnswers = openAnswersB, multipleChoiceAnswers = multipleChoiceAnswersB)
+    const proofMixedB = await mixedB.generateSolutionProof({ recipient: accounts[2], openAnswers: openAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB })
     expect( await mixedB.verifySolutionProof(proofMixedB) ).to.be.true
-    const altProofMixedB = await mixedB.generateSolutionProof(accounts[3], openAnswers = altOpenAnswersB, multipleChoiceAnswers = multipleChoiceAnswersB)
+    const altProofMixedB = await mixedB.generateSolutionProof({ recipient: accounts[3], openAnswers: altOpenAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB })
     expect( await mixedB.verifySolutionProof(altProofMixedB) ).to.be.true
-
-    console.log('all good')
 
     return 0;
 }

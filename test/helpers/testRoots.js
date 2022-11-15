@@ -8,23 +8,23 @@ const { poseidon, rootFromLeafArray } = require("../../src/poseidon.js")
 const leafArrayA = Array.from({length: 64}, (_, i) => 1)
 const leafArrayB = Array.from({length: 64}, (_, i) => 2)
 
-const multipleChoiceRootA = rootFromLeafArray(leafArrayA)
-const multipleChoiceRootB = rootFromLeafArray(leafArrayB)
+const multipleChoiceRootA = rootFromLeafArray(leafArrayA).toString()
+const multipleChoiceRootB = rootFromLeafArray(leafArrayB).toString()
 
 // open answer test
 const answerHashesA = Array(64).fill(
-    poseidon([BigInt('0x' + keccak256("").toString('hex'))])
+    poseidon([BigInt('0x' + keccak256("").toString('hex'))]).toString()
 );
-answerHashesA[0] = poseidon([BigInt('0x' + keccak256("sneed's").toString('hex'))])
-answerHashesA[1] = poseidon([BigInt('0x' + keccak256('feed').toString('hex'))])
-answerHashesA[2] = poseidon([BigInt('0x' + keccak256('seed').toString('hex'))])
+answerHashesA[0] = poseidon([BigInt('0x' + keccak256("sneed's").toString('hex'))]).toString()
+answerHashesA[1] = poseidon([BigInt('0x' + keccak256('feed').toString('hex'))]).toString()
+answerHashesA[2] = poseidon([BigInt('0x' + keccak256('seed').toString('hex'))]).toString()
 
 const answerHashesB = new Array(64).fill(
-    poseidon([BigInt('0x' + keccak256("deenz").toString('hex'))])
+    poseidon([BigInt('0x' + keccak256("deenz").toString('hex'))]).toString()
 );
 
-const openAnswersRootA = rootFromLeafArray(answerHashesA)
-const openAnswersRootB = rootFromLeafArray(answerHashesB)
+const openAnswersRootA = rootFromLeafArray(answerHashesA).toString()
+const openAnswersRootB = rootFromLeafArray(answerHashesB).toString()
 
 module.exports = {
     multipleChoiceRootA,

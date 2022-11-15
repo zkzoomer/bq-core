@@ -104,8 +104,8 @@ class bqTest {
             if ( data.stats.testType === 0 ) {  // pure open answer test
                 openAnswersRoot = await data.testCreatorContract.getOpenAnswersRoot(testId)
             } else if ( data.stats.testType > 0 && data.stats.testType < 100 ) {  // mixed test
-                multipleChoiceRoot = await data.testCreatorContract.getMultipleChoiceRoot(testId)
-                openAnswersRoot = await data.testCreatorContract.getOpenAnswersRoot(testId)
+                multipleChoiceRoot = (await data.testCreatorContract.getMultipleChoiceRoot(testId)).toString()
+                openAnswersRoot = (await data.testCreatorContract.getOpenAnswersRoot(testId)).toString()
             }
 
             // Retrieving open answer hashes from on-chain if they were not provided
@@ -129,7 +129,7 @@ class bqTest {
             }
 
         } else if ( data.stats.testType === 100 ) {  // multiple choice test
-            multipleChoiceRoot = await data.testCreatorContract.getMultipleChoiceRoot(testId)
+            multipleChoiceRoot = (await data.testCreatorContract.getMultipleChoiceRoot(testId)).toString()
         }
 
         return new bqTest(
@@ -175,7 +175,7 @@ class bqTest {
      * Returns the grade obtained for the given solution in this test 
      * @returns grade and correct answers obtained for the given solution.
      */
-    gradeSolution( openAnswers = [], multipleChoiceAnswers = [] ) {
+    gradeSolution({ openAnswers = [], multipleChoiceAnswers = [] }) {
         if ( !this.#solveMode ) {
             throw new Error('Test cannot be solved as it was not initialized in solveMode')
         }
@@ -188,7 +188,7 @@ class bqTest {
             }})
     
             // Checking if test is passed and returning the result
-            return rootFromLeafArray(answersArray) === this.#multipleChoiceRoot ? 100 : 0
+            return rootFromLeafArray(answersArray).toString() === this.#multipleChoiceRoot ? 100 : 0
         }
 
         const getOpenAnswersResult = ( openAnswers ) => {
@@ -241,7 +241,7 @@ class bqTest {
             if ( !(multipleChoiceAnswers).every(i => { return typeof i === 'number' }) ) { 
                 throw new TypeError('Answers must be numbers representing the multiple choices') 
             }
-            if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
+            if ( multipleChoiceAnswers.length > 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
             // All open answers must be provided - even if an empty ""
             if ( openAnswers.length !== this.#stats.nQuestions ) { throw new RangeError('Some questions were left unanswered') }
 
@@ -250,8 +250,8 @@ class bqTest {
             // Multiple choice component
             const multipleChoiceResult = getMultipleChoiceAnswersResult(multipleChoiceAnswers)
 
-            const result = multipleChoiceResult * this.#stats.testType  // weighted contribution of the multiple choice part
-                + 
+            const result = (multipleChoiceResult === 100 ? this.#stats.testType : 0) // weighted contribution of the multiple choice part
+                +
                 (
                 (nCorrect + openAnswers.length > 64) ?
                     (nCorrect + openAnswers.length - 64) * (100 - this.#stats.testType) / openAnswers.length
@@ -274,7 +274,7 @@ class bqTest {
             if ( !(multipleChoiceAnswers).every(i => { return typeof i === 'number' }) ) { 
                 throw new TypeError('Answers must be numbers representing the multiple choices') 
             }
-            if ( multipleChoiceAnswers.length <= 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
+            if ( multipleChoiceAnswers.length > 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
             
             // Returning the grade object
             const result = getMultipleChoiceAnswersResult(multipleChoiceAnswers)
@@ -282,7 +282,7 @@ class bqTest {
                 grade: result,
                 minimumGrade: 100,
                 pass: result === 100,
-                nQuestions: multipleChoiceAnswers.length,
+                nQuestions: 1,
                 multipleChoiceGrade: result,
                 openAnswerGrade: 0,
                 multipleChoiceWeight: 100,
@@ -298,11 +298,11 @@ class bqTest {
      * Returns the grade obtained for the given solution in this test 
      * @returns zk proof of the solution.
      */
-    async generateSolutionProof( 
+    async generateSolutionProof({ 
         recipient, 
         openAnswers = [], 
         multipleChoiceAnswers = [] 
-    ) {
+    }) {
         if ( !ethers.utils.isAddress(recipient) ) {
             throw new TypeError('Address given for the recipient is not valid')
         }
@@ -414,7 +414,9 @@ class bqTest {
             const resultsArray = new Array(64).fill(
                 poseidon([BigInt('0x' + keccak256("").toString('hex'))]).toString()
             )
-            resultsArray.forEach( (_, i) => { if (i < openAnswers.length) {resultsArray[i] = openAnswers[i]} })
+            resultsArray.forEach( (_, i) => { if (i < openAnswers.length) {
+                resultsArray[i] = BigInt('0x' + keccak256(openAnswers[i]).toString('hex'))
+            }})
             return resultsArray
         }
     }
@@ -423,7 +425,7 @@ class bqTest {
      * Verifies that the solution proof given will be accepted by the smart contract
      * @returns if the zk proof of the solution is valid.
      */
-    async verifySolutionProof(proof) {
+    async verifySolutionProof( proof ) {
         if ( !this.#solveMode ) {
             throw new Error('Test cannot be solved as it was not initialized in solveMode')
         }
@@ -472,7 +474,7 @@ class bqTest {
      * Generates the transaction object to be signed with the given solution attempt
      * @returns the solving transaction object to be signed
      */
-    generateSolutionTransaction(proof) {
+    generateSolutionTransaction( proof ) {
         if ( !this.#solveMode ) {
             throw new Error('Test cannot be solved as it was not initialized in solveMode')
         }
