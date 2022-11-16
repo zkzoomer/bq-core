@@ -26,11 +26,30 @@ const answerHashesB = new Array(64).fill(
 const openAnswersRootA = rootFromLeafArray(answerHashesA).toString()
 const openAnswersRootB = rootFromLeafArray(answerHashesB).toString()
 
+const multipleChoiceAnswersA = Array.from({length: 64}, (_, i) => 1)
+const multipleChoiceAnswersB = Array.from({length: 64}, (_, i) => 2)
+
+const openAnswersA = [
+    "sneed's",
+    'feed',
+    'seed'
+]
+
+const openAnswersB = new Array(64).fill("deenz")
+openAnswersB[0] = "tree"
+openAnswersB[1] = "fiddy"
+const altOpenAnswersB = new Array(64).fill("deenz")
+
 module.exports = {
     multipleChoiceRootA,
     multipleChoiceRootB,
     answerHashesA,
     answerHashesB,
     openAnswersRootA,
-    openAnswersRootB
+    openAnswersRootB,
+    multipleChoiceAnswersA,
+    multipleChoiceAnswersB,
+    openAnswersA,
+    openAnswersB,
+    altOpenAnswersB
 }

@@ -10,7 +10,11 @@ const mnemonic = fs.readFileSync(".secret").toString().trim();
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: "0.8.9",
+  defaultNetwork: "hardhat",
   networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true
+    },
     mumbai_testnet: {
       url: 'https://rpc-mumbai.maticvigil.com',  // RPC used just for deploying
       accounts: {

@@ -310,7 +310,10 @@ class bqTest {
         }
 
         const credentialBalance = (await this.#credentialContract.balanceOf(recipient)).toString()
-        const salt = BigInt(ethers.utils.solidityKeccak256(['address', 'uint256'], [recipient, credentialBalance])).toString()
+
+        // Salt is computed and then 
+        const snarkScalarField = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617")
+        const salt = (BigInt(ethers.utils.solidityKeccak256(['address', 'uint256'], [recipient, credentialBalance])) % snarkScalarField).toString()
 
         if ( this.#stats.testType === 0 ) {  // open answers test
             // All answers must be provided - even if an empty ""
@@ -411,7 +414,7 @@ class bqTest {
 
         function getOpenAnswersArray( openAnswers ) {
             const resultsArray = new Array(64).fill(
-                poseidon([BigInt('0x' + keccak256("").toString('hex'))]).toString()
+                BigInt('0x' + keccak256("").toString('hex'))
             )
             resultsArray.forEach( (_, i) => { if (i < openAnswers.length) {
                 resultsArray[i] = BigInt('0x' + keccak256(openAnswers[i]).toString('hex'))
@@ -479,11 +482,19 @@ class bqTest {
         }
 
         const signerContract = new ethers.Contract(
-            this.testCreatorContract.address, testCreatorAbi.abi, signer
+            this.#testCreatorContract.address, testCreatorAbi.abi, signer
         )
 
-        // TODO: set manual gas so that tx fails if not correct proof
-        try {
+        await signerContract.solveTest(
+            this.#testId,
+            proof.recipient,
+            proof.a,
+            [[proof.b[0][1], proof.b[0][0]], [proof.b[1][1], proof.b[1][0]]],  // Order changes on the verifier smart contract
+            proof.c,
+            proof.input.slice(0, -1)  // salt is computed at smart contract level using the specified recipient
+        )
+
+        /* try {
             await signerContract.solveTest(
                 this.#testId,
                 proof.recipient,
@@ -494,7 +505,7 @@ class bqTest {
             )
         } catch (err) {
             throw new Error('Transaction could not go through')
-        }
+        } */
     }
 
     /**
