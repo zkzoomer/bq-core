@@ -81,6 +81,9 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     // Salts that have been already used before for submitting solutions
     mapping (uint256 => bool) public usedSalts;
 
+    // Salts need to be computed modulo this number
+    uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` and deploying the Credentials and TestVerifier contracts
      */
@@ -320,8 +323,9 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(RequiredPass(_tests[testId].requiredPass).balanceOf(recipient) > 0, "Solver does not own the required token");
         }
 
-        // Computing the salt as keccak256(recipient, nonce), where the nonce is the amount of credentials it received
-        uint salt = uint(keccak256(abi.encodePacked(recipient, credentialsContract.balanceOf(recipient))));
+        // TODO: is this grypto safe? pretty sure it is but do more research
+        // Computing the salt as keccak256(recipient, nonce) % p, where the nonce is the amount of credentials it received
+        uint salt = uint(keccak256(abi.encodePacked(recipient, credentialsContract.balanceOf(recipient)))) % snark_scalar_field;
         require(!usedSalts[salt], "Salt was already used");
         // Voiding this salt
         usedSalts[salt] = true;
