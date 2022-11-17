@@ -1,33 +1,23 @@
-const { ethers, artifacts } = require("hardhat");
-const { BN, constants, expectEvent, expectRevert, send } = require('@openzeppelin/test-helpers');
+const { ethers } = require("hardhat");
+const { expectRevert } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 
+const { shouldSupportInterfaces } = require("./SupportsInterface.behavior");
 const { bqTest } = require("../src/bqTest")
-const poseidon = require("../src/poseidon.js");
-const keccak256 = require('keccak256')
 const {
     multipleChoiceRootA,
-    multipleChoiceRootB,
     answerHashesA,
-    answerHashesB,
     openAnswersRootA,
-    openAnswersRootB,
-    multipleChoiceAnswersA,
-    multipleChoiceAnswersB,
-    openAnswersA,
-    openAnswersB,
-    altOpenAnswersB
-} = require('./helpers/testRoots')
+} = require('./helpers/testRoots');
 
 const ZERO_ADDY = '0x0000000000000000000000000000000000000000'
 const fillText = 'The Tools You Need'
 
 function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, owner, newOwner, solver, altSolver, operator, other) {
-    // TODO
-    /* shouldSupportInterfaces([
+    shouldSupportInterfaces([
         'ERC165',
         'ERC721',
-    ]); */
+    ]);
 
     context('with minted tokens', function () {
         let multipleA, openA, mixedA
@@ -163,10 +153,9 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
 }
 
 function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver, altSolver, operator, other) {
-    // TODO
-    /* shouldSupportInterfaces([
+    shouldSupportInterfaces([
         'ERC721Enumerable',
-    ]); */
+    ]);
 
     context('with minted tokens', function () {
         let multipleA, openA, mixedA
@@ -239,10 +228,9 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
 }
 
 function shouldBehaveLikeERC721Metadata (errorPrefix, name, symbol, owner) {
-    // TODO
-    /* shouldSupportInterfaces([
+    shouldSupportInterfaces([
         'ERC721Metadata',
-    ]); */
+    ]);
 
     describe('metadata', function () {
         it('has a name', async function () {
