@@ -9,11 +9,11 @@ const {
 
 const testCreator = artifacts.require('TestCreator')
 const Credentials = artifacts.require('Credentials')
-/* const Valid = artifacts.require('Valid')
-const Malicious = artifacts.require('Malicious') */
+const Valid = artifacts.require('Valid')
+const Malicious = artifacts.require('Malicious')
 
 contract('testCreator', function (accounts) {
-    const name = "Block Qualified tests"
+    const name = "Block Qualified Tests"
     const symbol = "BQT"
     const approveRevertMessage = "BQT: cannot approve tests"
     const transferRevertMessage = "BQT: cannot transfer tests"
