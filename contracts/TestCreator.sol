@@ -78,9 +78,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     // Mapping for token URIs
     mapping (uint256 => string) private _tokenURIs;  // URL containing the test
 
-    // Salts that have been already used before for submitting solutions
-    mapping (uint256 => bool) public usedSalts;
-
     // Salts need to be computed modulo this number
     uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
@@ -88,7 +85,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * @dev Initializes the contract by setting a `name` and a `symbol` and deploying the Credentials and TestVerifier contracts
      */
     constructor () {
-        _name = "Block Qualified tests";
+        _name = "Block Qualified Tests";
         _symbol = "BQT";
 
         credentialsContract = new Credentials();
@@ -309,7 +306,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint[2] calldata c,
         uint[] calldata input  
     ) external nonReentrant {
-        /* require(_exists(testId), "Solving test that does not exist"); */  // TODO: already covered on require below ?
         require(recipient != ownerOf(testId), "Test cannot be solved by owner");
         require(
             _tests[testId].credentialLimit == 0 || _tests[testId].solvers < _tests[testId].credentialLimit, 
@@ -323,12 +319,9 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(RequiredPass(_tests[testId].requiredPass).balanceOf(recipient) > 0, "Solver does not own the required token");
         }
 
-        // TODO: is this grypto safe? pretty sure it is but do more research
         // Computing the salt as keccak256(recipient, nonce) % p, where the nonce is the amount of credentials it received
         uint salt = uint(keccak256(abi.encodePacked(recipient, credentialsContract.balanceOf(recipient)))) % snark_scalar_field;
-        require(!usedSalts[salt], "Salt was already used");
-        // Voiding this salt
-        usedSalts[salt] = true;
+        // Salt was previously voided here, but adding the recipient as part of the proof means this does not need to be done, saving up ~20,000 gas!
         
         // Verify solution
         require(verifierContract.verifyProof(_tests[testId].testType, a, b, c, input, salt), "Invalid proof");
@@ -336,8 +329,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint256 result;
 
         if ( _tests[testId].testType == 0 ) {  // Open answers test, providing [results, answerHashesRoot]
-            require(input.length == 2);  // @dev invalid input length
-
             // Ensuring the open answer test being solved is the one selected
             require(input[1] == _openAnswersRoot[testId], "Solving for another test");
 
@@ -349,8 +340,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(result >= _tests[testId].minimumGrade, "Grade is below minimum");
 
         } else if ( _tests[testId].testType > 0 && _tests[testId].testType < 100 ) {  // Mixed test, providing [solutionHash, results, answersHashRoot]
-            require(input.length == 3);  // @dev invalid input length
-
             // Ensuring the open answer test being solved is the one selected
             require(input[2] == _openAnswersRoot[testId], "Solving for another test");
 
@@ -366,8 +355,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(result >= _tests[testId].minimumGrade, "Grade is below minimum");
 
         } else if ( _tests[testId].testType == 100 ) {  // Multiple choice test, providing [solutionHash]
-            require(input.length == 1);  // @dev invalid input length
-
             // Get result
             result = 100;
 
@@ -399,7 +386,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * @dev See {IERC721-ownerOf}.
      */
     function ownerOf(uint256 testId) public view virtual override returns (address) {
-        return _tokenOwners.get(testId, "ERC721: owner query for nonexistent token");
+        return _tokenOwners.get(testId, "Test does not exist");
     }
 
     /**

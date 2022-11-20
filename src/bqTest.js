@@ -99,6 +99,7 @@ class bqTest {
 
         var openAnswersRoot = ""
         var multipleChoiceRoot = ""
+        var fullOpenAnswerHashes = null
 
         if ( data.stats.testType < 100 ) {  // Test includes an open answer component
             if ( data.stats.testType === 0 ) {  // pure open answer test
@@ -118,7 +119,7 @@ class bqTest {
             }
 
             // Verify that the open answer hashes are valid
-            const fullOpenAnswerHashes = new Array(64).fill(
+            fullOpenAnswerHashes = new Array(64).fill(
                 poseidon([BigInt('0x' + keccak256("").toString('hex'))]).toString()
             )
             fullOpenAnswerHashes.forEach( (_, i) => { if (i < openAnswersHashes.length) {
@@ -141,7 +142,7 @@ class bqTest {
             data.testCreatorContract, 
             data.credentialsContract,
             multipleChoiceRoot,
-            openAnswersHashes
+            fullOpenAnswerHashes
         )
     }
 
@@ -485,7 +486,7 @@ class bqTest {
             this.#testCreatorContract.address, testCreatorAbi.abi, signer
         )
 
-        await signerContract.solveTest(
+        const tx = await signerContract.solveTest(
             this.#testId,
             proof.recipient,
             proof.a,
@@ -494,18 +495,7 @@ class bqTest {
             proof.input.slice(0, -1)  // salt is computed at smart contract level using the specified recipient
         )
 
-        /* try {
-            await signerContract.solveTest(
-                this.#testId,
-                proof.recipient,
-                proof.a,
-                [[proof.b[0][1], proof.b[0][0]], [proof.b[1][1], proof.b[1][0]]],  // Order changes on the verifier smart contract
-                proof.c,
-                proof.input.slice(0, -1)  // salt is computed at smart contract level using the specified recipient
-            )
-        } catch (err) {
-            throw new Error('Transaction could not go through')
-        } */
+        return tx
     }
 
     /**
@@ -558,7 +548,6 @@ class bqTest {
 
         return addy in holders
     }
-
 }
 
 module.exports = {

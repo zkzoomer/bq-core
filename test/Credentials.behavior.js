@@ -4,14 +4,11 @@ const { expect } = require('chai');
 
 const { bqTest } = require("../src/bqTest")
 const {
-    multipleChoiceRootA,
-    multipleChoiceRootB,
+    multipleChoiceRoot,
     answerHashesA,
     answerHashesB,
     openAnswersRootA,
     openAnswersRootB,
-    multipleChoiceAnswersB,
-    altOpenAnswersB
 } = require('./helpers/testRoots');
 
 const ZERO_ADDY = '0x0000000000000000000000000000000000000000'
@@ -21,23 +18,24 @@ const credentialsGainedC = 'Seed';
 const testURI = 'https://gateway.ipfs.io/ipfs/QmcniBv7UQ4gGPQQW2BwbD4ZZHzN3o3tPuNLZCbBchd1zh'
 
 function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operator, other) {
+    
     context('with solved tests', function () {
         let multipleA, openA, mixedA
-        let _1, _2, solverSigner, altSolverSigner
+        let _1, _2, solverSigner
 
         beforeEach(async function () {
             [_1, _2, solverSigner, altSolverSigner] = await ethers.getSigners();
 
             // multipleA
-            await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRootA], ZERO_ADDY, credentialsGainedA, testURI)
+            await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRoot], ZERO_ADDY, credentialsGainedA, testURI)
             multipleA = await bqTest.solveMode(1, ethers.provider, this.testCreator.address)
-            await multipleA.sendSolutionTransaction( solverSigner, this.proofs.proofMultipleA )
+            await multipleA.sendSolutionTransaction( solverSigner, this.proofs.proofMultiple )
             // openA
             await this.testCreator.createTest(0, 3, 1, 0, 0, [openAnswersRootA], ZERO_ADDY, credentialsGainedB, testURI)
             openA = await bqTest.solveMode(2, ethers.provider, this.testCreator.address, answerHashesA)
             await openA.sendSolutionTransaction( solverSigner, this.proofs.proofOpenA )
             // mixedA
-            await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRootA, openAnswersRootA], ZERO_ADDY, credentialsGainedC, testURI)
+            await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGainedC, testURI)
             mixedA = await bqTest.solveMode(3, ethers.provider, this.testCreator.address, answerHashesA)
             await mixedA.sendSolutionTransaction( solverSigner, this.proofs.proofMixedA )
         })
@@ -47,7 +45,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                 expect(await this.credentials.totalSupply())
                     .to.be.bignumber.equal('3')
 
-                await multipleA.sendSolutionTransaction( altSolverSigner, this.proofs.altProofMultipleA )
+                await multipleA.sendSolutionTransaction( altSolverSigner, this.proofs.altProofMultiple )
 
                 expect(await this.credentials.totalSupply())
                     .to.be.bignumber.equal('4')
@@ -63,7 +61,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
 
             context('when the credentials have been granted', function () {
                 it('returns a list of the addresses that got a credential', async function () {
-                    await multipleA.sendSolutionTransaction( altSolverSigner, this.proofs.altProofMultipleA )
+                    await multipleA.sendSolutionTransaction( altSolverSigner, this.proofs.altProofMultiple )
     
                     expect(await this.credentials.credentialReceivers('1'))
                         .to.deep.equal([solver, altSolver])
@@ -162,8 +160,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                         .to.be.bignumber.equal('96')
 
                     // Improving upon the solution
-                    const altProofOpenB = await openB.generateSolutionProof({ recipient: solver, openAnswers: altOpenAnswersB })
-                    await openB.sendSolutionTransaction( solverSigner, altProofOpenB )
+                    await openB.sendSolutionTransaction( solverSigner, this.proofs.altProofOpenB )
                     expect(await this.credentials.getResults(solver, '4'))
                         .to.be.bignumber.equal('100')
                 })
@@ -176,7 +173,7 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                         .to.be.bignumber.equal('100')
 
                     // Did not ace the test
-                    await this.testCreator.createTest(50, 64, 1, 0, 0, [multipleChoiceRootB, openAnswersRootB], ZERO_ADDY, credentialsGainedC, testURI)
+                    await this.testCreator.createTest(50, 64, 1, 0, 0, [multipleChoiceRoot, openAnswersRootB], ZERO_ADDY, credentialsGainedC, testURI)
                     const mixedB = await bqTest.solveMode(4, ethers.provider, this.testCreator.address, answerHashesB)
                     await mixedB.sendSolutionTransaction( solverSigner, this.proofs.proofMixedB )
                     expect(await this.credentials.getResults(solver, '4'))
@@ -184,15 +181,14 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
                 })
 
                 it('reflects the improvement in the credential', async function () {
-                    await this.testCreator.createTest(50, 64, 1, 0, 0, [multipleChoiceRootB, openAnswersRootB], ZERO_ADDY, credentialsGainedC, testURI)
+                    await this.testCreator.createTest(50, 64, 1, 0, 0, [multipleChoiceRoot, openAnswersRootB], ZERO_ADDY, credentialsGainedC, testURI)
                     const mixedB = await bqTest.solveMode(4, ethers.provider, this.testCreator.address, answerHashesB)
                     await mixedB.sendSolutionTransaction( solverSigner, this.proofs.proofMixedB )
                     expect(await this.credentials.getResults(solver, '4'))
                         .to.be.bignumber.equal('98')
 
                     // Improving upon the solution
-                    const altProofMixedB = await mixedB.generateSolutionProof({ recipient: solver, openAnswers: altOpenAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB })
-                    await mixedB.sendSolutionTransaction( solverSigner, altProofMixedB )
+                    await mixedB.sendSolutionTransaction( solverSigner, this.proofs.altProofMixedB )
                     expect(await this.credentials.getResults(solver, '4'))
                         .to.be.bignumber.equal('100')
                 })
@@ -202,21 +198,21 @@ function shouldBehaveLikeCredentials(owner, newOwner, solver, altSolver, operato
 
     context('with invalidated tests', function () {
         let multipleA, openA, mixedA
-        let _1, _2, solverSigner, altSolverSigner
+        let _1, _2, solverSigner
 
         beforeEach(async function () {
-            [_1, _2, solverSigner, altSolverSigner] = await ethers.getSigners();
+            [_1, _2, solverSigner] = await ethers.getSigners();
 
             // multipleA
-            await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRootA], ZERO_ADDY, credentialsGainedA, testURI)
+            await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRoot], ZERO_ADDY, credentialsGainedA, testURI)
             multipleA = await bqTest.solveMode(1, ethers.provider, this.testCreator.address)
-            await multipleA.sendSolutionTransaction( solverSigner, this.proofs.proofMultipleA )
+            await multipleA.sendSolutionTransaction( solverSigner, this.proofs.proofMultiple )
             // openA
             await this.testCreator.createTest(0, 3, 1, 0, 0, [openAnswersRootA], ZERO_ADDY, credentialsGainedB, testURI)
             openA = await bqTest.solveMode(2, ethers.provider, this.testCreator.address, answerHashesA)
             await openA.sendSolutionTransaction( solverSigner, this.proofs.proofOpenA )
             // mixedA
-            await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRootA, openAnswersRootA], ZERO_ADDY, credentialsGainedC, testURI)
+            await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGainedC, testURI)
             mixedA = await bqTest.solveMode(3, ethers.provider, this.testCreator.address, answerHashesA)
             await mixedA.sendSolutionTransaction( solverSigner, this.proofs.proofMixedA )
         

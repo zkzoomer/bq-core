@@ -5,13 +5,14 @@ const { expect } = require('chai');
 const { shouldSupportInterfaces } = require("./SupportsInterface.behavior");
 const { bqTest } = require("../src/bqTest")
 const {
-    multipleChoiceRootA,
+    multipleChoiceRoot,
     answerHashesA,
     openAnswersRootA,
 } = require('./helpers/testRoots');
 
 const ZERO_ADDY = '0x0000000000000000000000000000000000000000'
-const fillText = 'The Tools You Need'
+const credentialsGained = 'The Tools You Need'
+const testURI = 'https://gateway.ipfs.io/ipfs/QmcniBv7UQ4gGPQQW2BwbD4ZZHzN3o3tPuNLZCbBchd1zh'
 
 function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, owner, newOwner, solver, altSolver, operator, other) {
     shouldSupportInterfaces([
@@ -21,26 +22,21 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
 
     context('with minted tokens', function () {
         let multipleA, openA, mixedA
-        let proofMultipleA, proofOpenA, proofMixedA
         let _1, _2, solverSigner, altSolverSigner
-
-        before(async function () {
-            // Generating the proofs just the one time
-        })
 
         beforeEach(async function () {
             [_1, _2, solverSigner, altSolverSigner] = await ethers.getSigners();
 
             // multipleA
-            await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRootA], ZERO_ADDY, fillText, fillText)
+            await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRoot], ZERO_ADDY, credentialsGained, testURI)
             multipleA = await bqTest.solveMode(1, ethers.provider, this.testCreator.address)
-            await multipleA.sendSolutionTransaction( solverSigner, this.proofs.proofMultipleA )
+            await multipleA.sendSolutionTransaction( solverSigner, this.proofs.proofMultiple )
             // openA
-            await this.testCreator.createTest(0, 3, 1, 0, 0, [openAnswersRootA], ZERO_ADDY, fillText, fillText)
+            await this.testCreator.createTest(0, 3, 1, 0, 0, [openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
             openA = await bqTest.solveMode(2, ethers.provider, this.testCreator.address, answerHashesA)
             await openA.sendSolutionTransaction( solverSigner, this.proofs.proofOpenA )
             // mixedA
-            await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRootA, openAnswersRootA], ZERO_ADDY, fillText, fillText)
+            await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
             mixedA = await bqTest.solveMode(3, ethers.provider, this.testCreator.address, answerHashesA)
             await mixedA.sendSolutionTransaction( solverSigner, this.proofs.proofMixedA )
         })
@@ -78,7 +74,7 @@ function shouldBehaveLikeERC721 (approveRevertMessage, transferRevertMessage, ow
             context('when the given token ID was not tracked by this token', function () {
                 it('reverts', async function () {
                     await expectRevert(
-                        this.token.ownerOf('350'), 'ERC721: owner query for nonexistent token',
+                        this.token.ownerOf('350'), "Test does not exist",
                     );
                 });
             });
@@ -165,15 +161,15 @@ function shouldBehaveLikeERC721Enumerable (errorPrefix, owner, newOwner, solver,
             [_1, _2, solverSigner, altSolverSigner] = await ethers.getSigners();
 
             // multipleA
-            await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRootA], ZERO_ADDY, fillText, fillText)
+            await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRoot], ZERO_ADDY, credentialsGained, testURI)
             multipleA = await bqTest.solveMode(1, ethers.provider, this.testCreator.address)
-            await multipleA.sendSolutionTransaction( solverSigner, this.proofs.proofMultipleA )
+            await multipleA.sendSolutionTransaction( solverSigner, this.proofs.proofMultiple )
             // openA
-            await this.testCreator.createTest(0, 3, 1, 0, 0, [openAnswersRootA], ZERO_ADDY, fillText, fillText)
+            await this.testCreator.createTest(0, 3, 1, 0, 0, [openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
             openA = await bqTest.solveMode(2, ethers.provider, this.testCreator.address, answerHashesA)
             await openA.sendSolutionTransaction( solverSigner, this.proofs.proofOpenA )
             // mixedA
-            await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRootA, openAnswersRootA], ZERO_ADDY, fillText, fillText)
+            await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
             mixedA = await bqTest.solveMode(3, ethers.provider, this.testCreator.address, answerHashesA)
             await mixedA.sendSolutionTransaction( solverSigner, this.proofs.proofMixedA )
         })
@@ -243,15 +239,15 @@ function shouldBehaveLikeERC721Metadata (errorPrefix, name, symbol, owner) {
     
         describe('token URI', function () {
             beforeEach(async function () {
-                await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRootA], ZERO_ADDY, fillText, fillText)
-                await this.testCreator.createTest(0, 3, 1, 0, 0, [openAnswersRootA], ZERO_ADDY, fillText, fillText)
-                await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRootA, openAnswersRootA], ZERO_ADDY, fillText, fillText)
+                await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRoot], ZERO_ADDY, credentialsGained, testURI)
+                await this.testCreator.createTest(0, 3, 1, 0, 0, [openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
+                await this.testCreator.createTest(50, 3, 1, 0, 0, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
             });
     
             it('return the given URI', async function () {
-                expect(await this.token.tokenURI('1')).to.be.equal(fillText);
-                expect(await this.token.tokenURI('2')).to.be.equal(fillText);
-                expect(await this.token.tokenURI('3')).to.be.equal(fillText);
+                expect(await this.token.tokenURI('1')).to.be.equal(testURI);
+                expect(await this.token.tokenURI('2')).to.be.equal(testURI);
+                expect(await this.token.tokenURI('3')).to.be.equal(testURI);
             });
         
             it('reverts when queried for non existent token id', async function () {

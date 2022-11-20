@@ -1,11 +1,12 @@
 const { ethers, artifacts } = require("hardhat");
 
 const generateProofs = require('./helpers/generateProofs')
+const { shouldBehaveLikeCredentials } = require("./Credentials.behavior")
 const {
     shouldBehaveLikeERC721,
     shouldBehaveLikeERC721Metadata,
     shouldBehaveLikeERC721Enumerable,
-} = require('./ERC721.behavior');
+} = require('./ERC721.behavior')
 
 const testCreator = artifacts.require('TestCreator')
 const Credentials = artifacts.require('Credentials')
@@ -37,5 +38,5 @@ contract('Credentials', function (accounts) {
     shouldBehaveLikeERC721(approveRevertMessage, transferRevertMessage, ...accounts);
     shouldBehaveLikeERC721Metadata('ERC721', name, symbol, ...accounts);
     shouldBehaveLikeERC721Enumerable('ERC721', ...accounts)
-    /* shouldBehaveLikeCredentials(...accounts) */
+    shouldBehaveLikeCredentials(...accounts)
 })

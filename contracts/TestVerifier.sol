@@ -58,10 +58,13 @@ contract TestVerifier {
 
         VerifyingKey memory vk;
         if (testType == 0) {
+            require(input.length == 2);  // @dev invalid input length
             vk = openVerifyingKey();
         } else if (testType > 0 && testType < 100) {
+            require(input.length == 3);  // @dev invalid input length
             vk = mixedVerifyingKey();
         } else if (testType == 100) {
+            require(input.length == 1);  // @dev invalid input length
             vk = multipleVerifyingKey();
         } else {
             revert();

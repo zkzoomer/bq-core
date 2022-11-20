@@ -1,6 +1,7 @@
 const { ethers, artifacts } = require("hardhat");
 
 const generateProofs = require('./helpers/generateProofs')
+const { shouldBehaveLikeTestCreator } = require("./TestCreator.behavior")
 const {
     shouldBehaveLikeERC721,
     shouldBehaveLikeERC721Metadata,
@@ -9,8 +10,6 @@ const {
 
 const testCreator = artifacts.require('TestCreator')
 const Credentials = artifacts.require('Credentials')
-const Valid = artifacts.require('Valid')
-const Malicious = artifacts.require('Malicious')
 
 contract('testCreator', function (accounts) {
     const name = "Block Qualified Tests"
@@ -33,14 +32,11 @@ contract('testCreator', function (accounts) {
         const credentialsAddress = await this.testCreator.credentialsContract()
         this.credentials = await Credentials.at(credentialsAddress)
 
-        this.valid = await Valid.new('Valid', 'VALID')
-        this.malicious = await Malicious.new()
-
-        this.token = this.credentials
+        this.token = this.testCreator
     })
 
     shouldBehaveLikeERC721(approveRevertMessage, transferRevertMessage, ...accounts);
     shouldBehaveLikeERC721Metadata('ERC721', name, symbol, ...accounts);
     shouldBehaveLikeERC721Enumerable('ERC721', ...accounts)
-    /* shouldBehaveLikeTestCreator(...accounts) */
+    shouldBehaveLikeTestCreator(...accounts)
 })

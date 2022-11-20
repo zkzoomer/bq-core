@@ -36,21 +36,21 @@ async function generateProofs ( testCreatorContract, ethersProvider, solverSigne
     await testCreatorContract.createTest(0, 64, 1, 0, 0, [openAnswersRootB], ZERO_ADDY, fillText, fillText)
     const openB = await bqTest.solveMode(4, ethersProvider, testCreatorContract.address, answerHashesB)
 
-    await testCreatorContract.createTest(50, 64, 1, 0, 0, [multipleChoiceRootB, openAnswersRootB], ZERO_ADDY, fillText, fillText)
+    await testCreatorContract.createTest(50, 64, 1, 0, 0, [multipleChoiceRoot, openAnswersRootB], ZERO_ADDY, fillText, fillText)
     const mixedB = await bqTest.solveMode(5, ethersProvider, testCreatorContract.address, answerHashesB)
 
     // WRONG SOLUTIONS
     const proofMultipleWrong = await multiple.generateSolutionProof({ recipient: solverSignerAddress, multipleChoiceAnswers: Array.from({length: 64}, (_, i) => 2) })
-    expect( await openA.verifySolutionProof(proofMultipleWrong) ).to.be.true
-    const proofOpenWrong = await openA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersB })
+    expect( await multiple.verifySolutionProof(proofMultipleWrong) ).to.be.true
+    const proofOpenWrong = await openA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: ['chuck', 'fck', 'sck'] })
     expect( await openA.verifySolutionProof(proofOpenWrong) ).to.be.true
-    const proofMixedWrong = await mixedA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB })
-    expect( await openA.verifySolutionProof(proofMixedWrong) ).to.be.true
+    const proofMixedWrong = await mixedA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: ['chuck', 'fck', 'sck'], multipleChoiceAnswers: Array.from({length: 64}, (_, i) => 2) })
+    expect( await mixedA.verifySolutionProof(proofMixedWrong) ).to.be.true
 
     // MAIN SOLUTIONS - GET SIGNED TO INCREASE NONCE
-    const proofmultiple = await multiple.generateSolutionProof({ recipient: solverSignerAddress, multipleChoiceAnswers: multipleChoiceAnswers })
-    expect( await multiple.verifySolutionProof(proofmultiple) ).to.be.true
-    await multiple.sendSolutionTransaction( solverSigner, proofmultiple )
+    const proofMultiple = await multiple.generateSolutionProof({ recipient: solverSignerAddress, multipleChoiceAnswers: multipleChoiceAnswers })
+    expect( await multiple.verifySolutionProof(proofMultiple) ).to.be.true
+    await multiple.sendSolutionTransaction( solverSigner, proofMultiple )
 
     const proofOpenA = await openA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersA })
     expect( await openA.verifySolutionProof(proofOpenA) ).to.be.true
@@ -61,26 +61,29 @@ async function generateProofs ( testCreatorContract, ethersProvider, solverSigne
     await mixedA.sendSolutionTransaction( solverSigner, proofMixedA )
 
     // ALT MAIN SOLUTIONS
-    const altProofmultiple = await multiple.generateSolutionProof({ recipient: altSolverSignerAddress, multipleChoiceAnswers: multipleChoiceAnswers })
-    expect( await multiple.verifySolutionProof(altProofmultiple) ).to.be.true
+    const altProofMultiple = await multiple.generateSolutionProof({ recipient: altSolverSignerAddress, multipleChoiceAnswers: multipleChoiceAnswers })
+    expect( await multiple.verifySolutionProof(altProofMultiple) ).to.be.true
 
-    const altProofOpenA = await openA.generateSolutionProof({ recipient: altSolverSignerAddress, openAnswers: openAnswersA })
+    const altProofOpenA = await openA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersA })
     expect( await openA.verifySolutionProof(altProofOpenA) ).to.be.true
 
-    const altProofMixedA = await mixedA.generateSolutionProof({ recipient: altSolverSignerAddress, openAnswers: openAnswersA, multipleChoiceAnswers: multipleChoiceAnswers })
+    const altProofMixedA = await mixedA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersA, multipleChoiceAnswers: multipleChoiceAnswers })
     expect( await mixedA.verifySolutionProof(altProofMixedA) ).to.be.true
 
     // OPEN AND MIXED B SOLUTIONS
     const proofOpenB = await openB.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersB })
     expect( await openB.verifySolutionProof(proofOpenB) ).to.be.true
 
-    const proofMixedB = await mixedB.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB })
+    const proofMixedB = await mixedB.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersB, multipleChoiceAnswers: multipleChoiceAnswers })
     expect( await mixedB.verifySolutionProof(proofMixedB) ).to.be.true
 
-    const altProofOpenB = await openB.generateSolutionProof({ recipient: altSolverSignerAddress, openAnswers: altOpenAnswersB })
+    await openB.sendSolutionTransaction( solverSigner, proofOpenB )
+    /* await mixedB.sendSolutionTransaction( solverSigner, proofMixedB ) */  // Only need one nonce increase
+
+    const altProofOpenB = await openB.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: altOpenAnswersB })
     expect( await openB.verifySolutionProof(altProofOpenB) ).to.be.true
 
-    const altProofMixedB = await mixedB.generateSolutionProof({ recipient: altSolverSignerAddress, openAnswers: altOpenAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB })
+    const altProofMixedB = await mixedB.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: altOpenAnswersB, multipleChoiceAnswers: multipleChoiceAnswers })
     expect( await mixedB.verifySolutionProof(altProofMixedB) ).to.be.true
 
     /* 
@@ -147,7 +150,7 @@ async function generateProofs ( testCreatorContract, ethersProvider, solverSigne
     })
 
     // mixedB
-    expect( mixedB.gradeSolution({ openAnswers: openAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB }) ).to.deep.equal({
+    expect( mixedB.gradeSolution({ openAnswers: openAnswersB, multipleChoiceAnswers: multipleChoiceAnswers }) ).to.deep.equal({
         grade: 50 + 50 * 62 / 64,
         minimumGrade: 1,
         pass: true,
@@ -159,7 +162,7 @@ async function generateProofs ( testCreatorContract, ethersProvider, solverSigne
     })
 
     // altMixedB
-    expect( mixedB.gradeSolution({ openAnswers: altOpenAnswersB, multipleChoiceAnswers: multipleChoiceAnswersB }) ).to.deep.equal({
+    expect( mixedB.gradeSolution({ openAnswers: altOpenAnswersB, multipleChoiceAnswers: multipleChoiceAnswers }) ).to.deep.equal({
         grade: 100,
         minimumGrade: 1,
         pass: true,
@@ -174,10 +177,10 @@ async function generateProofs ( testCreatorContract, ethersProvider, solverSigne
         proofMultipleWrong,
         proofOpenWrong,
         proofMixedWrong,
-        proofmultiple,
+        proofMultiple,
         proofOpenA,
         proofMixedA,
-        altProofmultiple,
+        altProofMultiple,
         altProofOpenA,
         altProofMixedA,
         proofOpenB,
