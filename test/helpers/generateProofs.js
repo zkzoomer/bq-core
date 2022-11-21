@@ -47,18 +47,15 @@ async function generateProofs ( testCreatorContract, ethersProvider, solverSigne
     const proofMixedWrong = await mixedA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: ['chuck', 'fck', 'sck'], multipleChoiceAnswers: Array.from({length: 64}, (_, i) => 2) })
     expect( await mixedA.verifySolutionProof(proofMixedWrong) ).to.be.true
 
-    // MAIN SOLUTIONS - GET SIGNED TO INCREASE NONCE
+    // MAIN SOLUTIONS 
     const proofMultiple = await multiple.generateSolutionProof({ recipient: solverSignerAddress, multipleChoiceAnswers: multipleChoiceAnswers })
     expect( await multiple.verifySolutionProof(proofMultiple) ).to.be.true
-    await multiple.sendSolutionTransaction( solverSigner, proofMultiple )
 
     const proofOpenA = await openA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersA })
     expect( await openA.verifySolutionProof(proofOpenA) ).to.be.true
-    await openA.sendSolutionTransaction( solverSigner, proofOpenA )
 
     const proofMixedA = await mixedA.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersA, multipleChoiceAnswers: multipleChoiceAnswers })
     expect( await mixedA.verifySolutionProof(proofMixedA) ).to.be.true
-    await mixedA.sendSolutionTransaction( solverSigner, proofMixedA )
 
     // ALT MAIN SOLUTIONS
     const altProofMultiple = await multiple.generateSolutionProof({ recipient: altSolverSignerAddress, multipleChoiceAnswers: multipleChoiceAnswers })
@@ -76,9 +73,6 @@ async function generateProofs ( testCreatorContract, ethersProvider, solverSigne
 
     const proofMixedB = await mixedB.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: openAnswersB, multipleChoiceAnswers: multipleChoiceAnswers })
     expect( await mixedB.verifySolutionProof(proofMixedB) ).to.be.true
-
-    await openB.sendSolutionTransaction( solverSigner, proofOpenB )
-    /* await mixedB.sendSolutionTransaction( solverSigner, proofMixedB ) */  // Only need one nonce increase
 
     const altProofOpenB = await openB.generateSolutionProof({ recipient: solverSignerAddress, openAnswers: altOpenAnswersB })
     expect( await openB.verifySolutionProof(altProofOpenB) ).to.be.true

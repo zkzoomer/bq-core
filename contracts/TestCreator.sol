@@ -319,9 +319,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             require(RequiredPass(_tests[testId].requiredPass).balanceOf(recipient) > 0, "Solver does not own the required token");
         }
 
-        // Computing the salt as keccak256(recipient, nonce) % p, where the nonce is the amount of credentials it received
-        uint salt = uint(keccak256(abi.encodePacked(recipient, credentialsContract.balanceOf(recipient)))) % snark_scalar_field;
-        // Salt was previously voided here, but adding the recipient as part of the proof means this does not need to be done, saving up ~20,000 gas!
+        uint salt = uint(uint160(recipient));
         
         // Verify solution
         require(verifierContract.verifyProof(_tests[testId].testType, a, b, c, input, salt), "Invalid proof");

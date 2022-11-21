@@ -310,11 +310,7 @@ class bqTest {
             throw new Error('Test cannot be solved as it was not initialized in solveMode')
         }
 
-        const credentialBalance = (await this.#credentialContract.balanceOf(recipient)).toString()
-
-        // Salt is computed and then 
-        const snarkScalarField = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617")
-        const salt = (BigInt(ethers.utils.solidityKeccak256(['address', 'uint256'], [recipient, credentialBalance])) % snarkScalarField).toString()
+        const salt = BigInt(recipient).toString()
 
         if ( this.#stats.testType === 0 ) {  // open answers test
             // All answers must be provided - even if an empty ""
