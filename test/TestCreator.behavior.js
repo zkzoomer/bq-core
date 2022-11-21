@@ -765,7 +765,6 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
                 
                 it('does not let users change the result if given a worse one', async function () {
                     const proof = await multiple.generateSolutionProof({ recipient: solver, multipleChoiceAnswers: Array.from({length: 64}, (_, i) => 1) })
-                    console.log(proof)
                     await expectRevert(
                         solveTest(this.testCreator, '1', proof)
                         ,
