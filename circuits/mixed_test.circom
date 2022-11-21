@@ -14,7 +14,7 @@ template MixedTest(k, p) {
     // The open ended part of the test requires the hashes of the answers as well as the user's answers
     signal input openAnswersHash[n];
     signal input openAnswers[n];
-    // Cryptographic salt, must be stored and voided inside the smart contract once used
+    // Cryptographic salt
     signal input salt;
 
     // Output signals, the test result is computed at the smart contract level
@@ -26,7 +26,7 @@ template MixedTest(k, p) {
     component multipleChoicePart = VerifyMultipleChoiceAnswers(k);
     component openAnswerPart = VerifyOpenAnswers(p);
 
-    // Uses a single salt for both components of the test, voided at the smart contract level
+    // Uses a single salt for both components of the test
     multipleChoicePart.salt <== salt;
     openAnswerPart.salt <== salt;
 

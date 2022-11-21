@@ -9,7 +9,7 @@ template VerifyMultipleChoiceAnswers(k) {
     // Ansers given by the user, as an array of integers that are mapped with the multiple choices
     // EG: A --> 1, B --> 2, C --> 3, D --> 4, ...
     signal input answers[nQuestions];
-    // Cryptographic salt, must be stored and voided inside the smart contract once used
+    // Cryptographic salt
     signal input salt;
     // Merkle root of the user's answers
     signal output solutionHash;

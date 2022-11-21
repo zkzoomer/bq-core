@@ -12,7 +12,7 @@ template VerifyOpenAnswers(k) {
     signal input answersHash[nQuestions];
     // The solver's answers
     signal input answers[nQuestions];
-    // Cryptographic salt, must be stored and voided inside the smart contract once used
+    // Cryptographic salt
     signal input salt;
     // Number of the solver's answers that are correct
     // Starts at zero, is increased on correct answer, the test result is computed at the smart contract level
