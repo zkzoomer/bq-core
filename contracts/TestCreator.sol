@@ -21,7 +21,7 @@ interface RequiredPass {
     function balanceOf(address _owner) external view returns (uint256);
 }
 
-contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, Ownable, ReentrancyGuard {
+contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerable, ReentrancyGuard {
     using SafeMath for uint8;
     using SafeMath for uint32;
     using SafeMath for uint256;
@@ -154,7 +154,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         address _requiredPass,
         string memory _credentialsGained,
         string memory _testURI
-    ) external onlyOwner {
+    ) external {
         // Increase the number of tests available
         _ntests++;
         uint256 _testId = _ntests;
