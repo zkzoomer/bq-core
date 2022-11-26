@@ -6,8 +6,6 @@ const { readFileSync } = require ('fs')
 const { poseidon, rootFromLeafArray } = require('./poseidon.js')
 
 // Contract interfaces
-/* const testCreatorAbi = JSON.parse(readFileSync('../artifacts/contracts/TestCreator.sol/TestCreator.json').toString())
-const credentialsAbi = JSON.parse(readFileSync('../artifacts/contracts/Credentials.sol/Credentials.json').toString()) */
 const testCreatorAbi = require('../artifacts/contracts/TestCreator.sol/TestCreator.json')
 const credentialsAbi = require ('../artifacts/contracts/Credentials.sol/Credentials.json')
 
@@ -288,6 +286,7 @@ class bqTest {
                 multipleChoiceWeight: 100,
                 openAnswerResults: [],
             }
+            
         } else {  // test was invalidated
             throw new Error('Test is invalidated and cannot be solved')
         }
@@ -511,7 +510,7 @@ class bqTest {
     }
 
     /**
-     * Returns whether this test URI
+     * Returns whether the test URI
      * @returns test URI.
      */
     get URI() {
@@ -527,8 +526,8 @@ class bqTest {
     }
 
     /**
-     * Returns the total number of holders for this credential 
-     * @returns number of holders.
+     * Returns the list of the accounts that have received this credential
+     * @returns list of credential receivers
      */
     async holdersList() {
         return this.#credentialContract.credentialReceivers(this.#testId)
