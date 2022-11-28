@@ -20,11 +20,10 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     using EnumerableSet for EnumerableSet.AddressSet;
     using Strings for uint256;
 
-    // Revert messages -- Block Qualified Credentials cannot be transferred
-    // This is done to aid with credentials: one can verify on-chain the address that created a test,
-    // that is, the owner of the corresponding Block Qualified test NFT.
-    string approveRevertMessage = "BQC: cannot approve credentials";
-    string transferRevertMessage = "BQC: cannot transfer credentials";
+    // Token name
+    string private _name = "Block Qualified Credentials";
+    // Token symbol
+    string private _symbol = "BQC";
 
     // Owner contract, the test creator
     TestCreator testContract;
@@ -38,16 +37,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     // Mapping from credential IDs to their (enumerable) set of receiver addresses
     mapping (uint256 => EnumerableSet.AddressSet) private _credentialReceivers;
 
-    // Token name
-    string private _name;
-
-    // Token symbol
-    string private _symbol;
-
     constructor () {
-
-        _name = "Block Qualified Credentials";
-        _symbol = "BQC";
 
         testContract = TestCreator(msg.sender);
 
@@ -221,7 +211,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Only present to be ERC-721 compliant. Credentials cannot be transferred, and as such cannot be approved for spending.
      */
     function approve(address /* _approved */, uint256 /* _testId */) public view virtual override {
-        revert(approveRevertMessage);
+        revert("BQC: cannot approve credentials");
     }
 
     /**
@@ -239,7 +229,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Only present to be ERC-721 compliant. Credentials cannot be transferred, and as such cannot be approved for spending.
      */
     function setApprovalForAll(address /* _operator */, bool /* _approved */) public view virtual override {
-        revert(approveRevertMessage);
+        revert("BQC: cannot approve credentials");
     }
 
     /**
@@ -257,7 +247,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Only present to be ERC721 compliant. Credentials cannot be transferred.
      */
     function transferFrom(address /* from */, address /* to */, uint256 /* testId */) public view virtual override {
-        revert(transferRevertMessage);
+        revert("BQC: cannot transfer credentials");
     }
 
     /**
@@ -275,7 +265,7 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Only present to be ERC721 compliant. Credentials cannot be transferred.
      */
     function safeTransferFrom(address /* from */, address /* to */, uint256 /* testId */, bytes memory /* _data */) public view virtual override {
-        revert(transferRevertMessage);
+        revert("BQC: cannot transfer credentials");
     }
     
 }

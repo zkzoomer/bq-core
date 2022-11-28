@@ -28,17 +28,6 @@ contract TestVerifier {
         Pairing.G2Point B;
         Pairing.G1Point C;
     }
-
-    /* /// @return r bool true if the tree with answerHashes at its leaves hashes into answersRoot at the top
-    function verifyTestAnswers(
-        uint[] calldata answerHashes,
-        uint answersRoot
-    ) public view returns(bool r) {
-        return true;
-        // To be added in v2
-        // For v1, only owner can publish tests so we can safely assume the answer hashes provided are correct
-        // For v2, verifying answer hashes may be used to increase reputation of the test
-    } */
     
     /**
      * @dev Verifies that a solving proof is correct for any of the kinds of tests

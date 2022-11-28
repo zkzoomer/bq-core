@@ -27,12 +27,11 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableMap for EnumerableMap.UintToAddressMap;
     using Strings for uint256;
-
-    // Revert messages -- Block Qualified tests cannot be transferred
-    // This is done to aid with credentials: one can verify on-chain the address that created a test,
-    // that is, the owner of the corresponding Block Qualified test NFT.
-    string approveRevertMessage = "BQT: cannot approve tests";
-    string transferRevertMessage = "BQT: cannot transfer tests";
+    
+    // Token name
+    string private _name = "Block Qualified Tests";
+    // Token symbol
+    string private _symbol = "BQT";
 
     // Smart contract for verifying tests
     TestVerifier public verifierContract;
@@ -47,12 +46,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
 
     // Number of tests that have been created
     uint256 private _ntests;
-
-    // Token name
-    string private _name;
-
-    // Token symbol
-    string private _symbol;
 
     struct Test {
         uint8 testType;
@@ -83,13 +76,11 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * @dev Initializes the contract by setting a `name` and a `symbol` and deploying the Credentials and TestVerifier contracts
      */
     constructor () {
-        _name = "Block Qualified Tests";
-        _symbol = "BQT";
 
         credentialsContract = new Credentials();
         verifierContract = new TestVerifier();
 
-        // register the supported interfaces to conform to ERC721 via ERC165
+        // Register the supported interfaces to conform to ERC721 via ERC165
         /*
         *     bytes4(keccak256('balanceOf(address)')) == 0x70a08231
         *     bytes4(keccak256('ownerOf(uint256)')) == 0x6352211e
@@ -415,7 +406,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Only present to be ERC-721 compliant. tests cannot be transferred, and as such cannot be approved for spending.
      */
     function approve(address /* _approved */, uint256 /* _testId */) public view virtual override {
-        revert(approveRevertMessage);
+        revert("BQT: cannot approve tests");
     }
 
     /**
@@ -433,7 +424,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Only present to be ERC721 compliant. tests cannot be transferred, and as such cannot be approved for spending.
      */
     function setApprovalForAll(address /* _operator */, bool /* _approved */) public view virtual override {
-        revert(approveRevertMessage);
+        revert("BQT: cannot approve tests");
     }
 
     /**
@@ -451,7 +442,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Only present to be ERC721 compliant. tests cannot be transferred.
      */
     function transferFrom(address /* from */, address /* to */, uint256 /* testId */) public view virtual override {
-        revert(transferRevertMessage);
+        revert("BQT: cannot transfer tests");
     }
 
     /**
@@ -467,7 +458,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Only present to be ERC721 compliant. tests cannot be transferred.
      */
     function safeTransferFrom(address /* from */, address /* to */, uint256 /* testId */, bytes memory /* _data */) public view virtual override {
-        revert(transferRevertMessage);
+        revert("BQT: cannot transfer tests");
     }
 
     /**
