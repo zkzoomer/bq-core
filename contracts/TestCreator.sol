@@ -69,9 +69,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     // Mapping for token URIs
     mapping (uint256 => string) private _tokenURIs;  // URL containing the test
 
-    // Salts need to be computed modulo this number
-    uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` and deploying the Credentials and TestVerifier contracts
      */
@@ -175,14 +172,14 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
 
         // Defining the test object for this testId
         _tests[_testId] = Test(
-            _testType,          // testType
-            _nQuestions,        // nQuestions
+            _testType,
+            _nQuestions,
             _minimumGrade,
-            0,                  // solvers
-            _credentialLimit,   // credentialLimit
-            _timeLimit,         // timeLimit
-            _requiredPass,      // requiredPass
-            _credentialsGained  // credentialsGained
+            0,
+            _credentialLimit,
+            _timeLimit,
+            _requiredPass,
+            _credentialsGained
         );
 
         // Minting this new nft
@@ -203,7 +200,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         require(_openAnswersHashes[testId].length == 0, "Test was already verified");
         require(ownerOf(testId) == msg.sender, "Verifying test that is not own");
         require(answerHashes.length == _tests[testId].nQuestions, "Invalid number provided");
-        /* require(verifierContract.verifyTestAnswers(answerHashes, _openAnswersRoot[testId]), "Answers provided do not verify test"); */
+
         _openAnswersHashes[testId] = answerHashes;
     } 
     
@@ -280,8 +277,6 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
 
         // Test still lives on chain for reference, but can no longer be solved.
         _tests[testId].testType = 255;
-
-        emit Transfer(msg.sender, address(0), testId);
     }
 
     /**

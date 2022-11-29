@@ -19,6 +19,7 @@
 .env.test.local
 .env.production.local
 .secret
+.apiscan
 
 npm-debug.log*
 yarn-debug.log*

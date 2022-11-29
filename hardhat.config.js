@@ -1,11 +1,13 @@
 
 require("@nomiclabs/hardhat-waffle");
 require('@nomiclabs/hardhat-truffle5');
+require("@nomiclabs/hardhat-etherscan");
 require('hardhat-contract-sizer');
 require('hardhat-gas-reporter');
 
 const fs = require('fs');
 const mnemonic = fs.readFileSync(".secret").toString().trim();
+const apiKey = fs.readFileSync(".apiscan").toString().trim();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -31,5 +33,8 @@ module.exports = {
   },
   mocha: {
     timeout: 100000000  // proof generation done all in one batch, can be slow
+  },
+  etherscan: {
+    apiKey: apiKey
   },
 };

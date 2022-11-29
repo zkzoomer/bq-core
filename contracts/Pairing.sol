@@ -7,15 +7,18 @@ library Pairing {
         uint X;
         uint Y;
     }
+
     // Encoding of field elements is: X[0] * z + X[1]
     struct G2Point {
         uint[2] X;
         uint[2] Y;
     }
+
     /// @return the generator of G1
     function P1() internal pure returns (G1Point memory) {
         return G1Point(1, 2);
     }
+
     /// @return the generator of G2
     function P2() internal pure returns (G2Point memory) {
         // Original code point
@@ -25,17 +28,8 @@ library Pairing {
             [4082367875863433681332203403145435568316851327593401208105741076214120093531,
              8495653923123431417604973247489272438418190587263600148770280649306958101930]
         );
-
-/*
-        // Changed by Jordi point
-        return G2Point(
-            [10857046999023057135944570762232829481370756359578518086990519993285655852781,
-             11559732032986387107991004021392285783925812861821192530917403151452391805634],
-            [8495653923123431417604973247489272438418190587263600148770280649306958101930,
-             4082367875863433681332203403145435568316851327593401208105741076214120093531]
-        );
-*/
     }
+
     /// @return r the negation of p, i.e. p.addition(p.negate()) should be zero.
     function negate(G1Point memory p) internal pure returns (G1Point memory r) {
         // The prime q in the base field F_q for G1
@@ -44,6 +38,7 @@ library Pairing {
             return G1Point(0, 0);
         return G1Point(p.X, q - (p.Y % q));
     }
+
     /// @return r the sum of two points of G1
     function addition(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
         uint[4] memory input;
@@ -60,6 +55,7 @@ library Pairing {
         }
         require(success,"pairing-add-failed");
     }
+
     /// @return r the product of a point on G1 and a scalar, i.e.
     /// p == p.scalar_mul(1) and p.addition(p) == p.scalar_mul(2) for all points p.
     function scalar_mul(G1Point memory p, uint s) internal view returns (G1Point memory r) {
@@ -76,6 +72,7 @@ library Pairing {
         }
         require (success,"pairing-mul-failed");
     }
+
     /// @return the result of computing the pairing check
     /// e(p1[0], p2[0]) *  .... * e(p1[n], p2[n]) == 1
     /// For example pairing([P1(), P1().negate()], [P2(), P2()]) should
@@ -105,6 +102,7 @@ library Pairing {
         require(success,"pairing-opcode-failed");
         return out[0] != 0;
     }
+
     /// Convenience method for a pairing check for two pairs.
     function pairingProd2(G1Point memory a1, G2Point memory a2, G1Point memory b1, G2Point memory b2) internal view returns (bool) {
         G1Point[] memory p1 = new G1Point[](2);
@@ -115,6 +113,7 @@ library Pairing {
         p2[1] = b2;
         return pairing(p1, p2);
     }
+
     /// Convenience method for a pairing check for three pairs.
     function pairingProd3(
             G1Point memory a1, G2Point memory a2,
@@ -131,6 +130,7 @@ library Pairing {
         p2[2] = c2;
         return pairing(p1, p2);
     }
+    
     /// Convenience method for a pairing check for four pairs.
     function pairingProd4(
             G1Point memory a1, G2Point memory a2,

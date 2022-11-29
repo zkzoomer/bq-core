@@ -499,12 +499,11 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
             })
 
             context('with a successful invalidation', function () {
-                let tx1, tx2, tx3
                 
                 beforeEach(async function () {
-                    tx1 = await this.testCreator.invalidateTest('1')
-                    tx2 = await this.testCreator.invalidateTest('2')
-                    tx3 = await this.testCreator.invalidateTest('3')
+                    await this.testCreator.invalidateTest('1')
+                    await this.testCreator.invalidateTest('2')
+                    await this.testCreator.invalidateTest('3')
                 })
 
                 it('reflects the invalidation in the on chain test object', async function () {
@@ -585,12 +584,6 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
                         ,
                         "Test was already invalidated"
                     )
-                })
-
-                it('emits a transfer event', async function () {
-                    expectEvent(tx1, 'Transfer', { from: owner, to: ZERO_ADDY, tokenId: '1'})
-                    expectEvent(tx2, 'Transfer', { from: owner, to: ZERO_ADDY, tokenId: '2'})
-                    expectEvent(tx3, 'Transfer', { from: owner, to: ZERO_ADDY, tokenId: '3'})
                 })
             })
         })

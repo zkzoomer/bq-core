@@ -267,5 +267,4 @@ contract Credentials is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     function safeTransferFrom(address /* from */, address /* to */, uint256 /* testId */, bytes memory /* _data */) public view virtual override {
         revert("BQC: cannot transfer credentials");
     }
-    
 }
