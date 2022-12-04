@@ -29,7 +29,7 @@ For each of these sections we will make use of the testnet deployed [TestCreator
 const solveModeTest = await bqTest.solveMode(
     '1',
     ethersProvider,
-    testCreatorAddress
+    '0x403E6BBCB3Ddbe3487c09E8827e5dEf058FE6db4'
 )
 ```
 
