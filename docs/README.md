@@ -8,7 +8,7 @@ Block Qualified aims to become an open education platform where users can create
 
 Users can define their own on-chain exams where they evaluate some kind of knowledge. Anyone can come in an attempt to solve this test: if they do so, they prove that they have the necessary knowledge. We call the creator of the test the _credential issuer_, while _solvers_ are the ones gaining the credentials.
 
-Exams and credentials both work as non-transferable ERC721 tokens. Exams, called Block Qualified Tests (BQT) are always linked to the _credential issuer_. Credentials, called Block Qualified Credentials (BQC) are always linked to one _solver_.
+Exams and credentials both work as non-transferable ERC721 tokens. Exams, called Block Qualified Tests (BQT), are always linked to the _credential issuer_. Credentials, called Block Qualified Credentials (BQC), are always linked to one _solver_.
 
 ## Deployed Versions
 
