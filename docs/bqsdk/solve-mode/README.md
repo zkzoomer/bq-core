@@ -22,4 +22,15 @@ When defined on solve mode, a _bqTest_ object can be used to
 - [Generate the corresponding proofs](generating-proof.md) 
 - [Verify generated proofs](verifying-proof.md)
 - [Sending the solving transactions on chain](sending-tx.md)
-For each of these sections we will make use of the testnet deployed contracts to provide implementation examples.
+
+For each of these sections we will make use of the testnet deployed [TestCreator.sol](https://mumbai.polygonscan.com/address/0x403E6BBCB3Ddbe3487c09E8827e5dEf058FE6db4#code) to provide implementation examples, and thus we define:
+
+```js
+const solveModeTest = await bqTest.solveMode(
+    '1',
+    ethersProvider,
+    testCreatorAddress
+)
+```
+
+We provide no _openAnswerHashes_ as the test has already been verified on-chain. You will not need to define this data as the bqTest object will retrieve it directly from the blockchain.
