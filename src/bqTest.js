@@ -110,7 +110,7 @@ class bqTest {
             // Retrieving open answer hashes from on-chain if they were not provided
             if ( !openAnswersHashes ) {
                 try {
-                    openAnswersHashes = await data.testCreatorContract.getOpenAnswersHashes(testId)
+                    openAnswersHashes = (await data.testCreatorContract.getOpenAnswersHashes(testId)).map(n => { return n.toString() })
                 } catch (err) {
                     throw new Error('Test cannot be solved as it is missing the open answers hashes')
                 }
@@ -158,7 +158,7 @@ class bqTest {
         const credentialsContract = new ethers.Contract(credentialsAddress, credentialsAbi.abi, ethersProvider)
         const stats = await testCreatorContract.getTest(testId)
         const testURI = await testCreatorContract.tokenURI(testId)
-        const isValid = stats.testType === 255
+        const isValid = stats.testType !== 255
         
         return {
             isValid,
@@ -530,7 +530,8 @@ class bqTest {
      * @returns list of credential receivers
      */
     async holdersList() {
-        return this.#credentialContract.credentialReceivers(this.#testId)
+        const list = await this.#credentialContract.credentialReceivers(this.#testId)
+        return list.map(a => { return ethers.utils.getAddress(a) })
     }
 
     /**
@@ -539,9 +540,8 @@ class bqTest {
      */
     async holdsCredential(address) {
         const addy = ethers.utils.getAddress(address)
-        const holders = this.holdersList()
-
-        return addy in holders
+        const holders = await this.holdersList()
+        return holders.includes(addy)
     }
 }
 
