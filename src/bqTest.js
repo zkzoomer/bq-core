@@ -4,8 +4,8 @@ const { groth16 } = require("./snarkjs");  // change to "snarkjs" when running n
 const { poseidon, rootFromLeafArray } = require('./poseidon.js')
 
 // Contract interfaces
-const testCreatorAbi = require('../artifacts/contracts/TestCreator.sol/TestCreator.json')
-const credentialsAbi = require ('../artifacts/contracts/Credentials.sol/Credentials.json')
+const testCreatorAbi = require('./contracts/TestCreator.json')
+const credentialsAbi = require ('./contracts/Credentials.json')
 
 // Verification keys
 const openVerificationKey = require("../proof/open/open_verification_key.json")
