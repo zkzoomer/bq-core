@@ -4,7 +4,12 @@ Get an NFT verifying your credentials by solving tests directly on-chain.
 Powered by ZK-SNARKS.
 
 ## Documentation
+
 You can access a full version of the documentation on [Gitbook](https://deenz.gitbook.io/bq-core/), or navigate to the [docs](./docs/) folder.
+
+# How to Add bq-core to Your Website
+
+The source code for a sample implementation covering all of the bq-core functionalities is provided under [bq-core-react-app](https://github.com/0xdeenz/bq-core-react-app). (CURRENTLY BEING BUILT)
 
 ## Deployed Contracts
 
