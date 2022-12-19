@@ -1,8 +1,6 @@
-const { ethers } = require('ethers')
-const { groth16 } = require("snarkjs")
+const ethers = require('ethers')
 const keccak256 = require('keccak256')
-const { readFileSync } = require ('fs')
-
+const { groth16 } = require("./snarkjs");  // change to "snarkjs" when running npx hardhat test
 const { poseidon, rootFromLeafArray } = require('./poseidon.js')
 
 // Contract interfaces
@@ -13,6 +11,19 @@ const credentialsAbi = require ('../artifacts/contracts/Credentials.sol/Credenti
 const openVerificationKey = require("../proof/open/open_verification_key.json")
 const mixedVerificationKey = require("../proof/mixed/mixed_verification_key.json")
 const multipleVerificationKey = require("../proof/multiple/multiple_verification_key.json")
+
+// Defining the Buffer library for the browser only, and the necessary files for generating proofs
+let multipleTestFiles, openTestFiles, mixedTestFiles
+if ( typeof window !== 'undefined' ) {
+    window.Buffer = window.Buffer || require("buffer").Buffer;
+    multipleTestFiles = { wasm: 'multiple.wasm', zkey: 'multiple.zkey' }
+    openTestFiles = { wasm: 'open.wasm', zkey: 'open.zkey' }
+    mixedTestFiles = { wasm: 'mixed.wasm', zkey: 'mixed.zkey' }
+} else {
+    multipleTestFiles = { wasm: './proof/multiple/multiple.wasm', zkey: './proof/multiple/multiple.zkey' }
+    openTestFiles = { wasm: './proof/open/open.wasm', zkey: './proof/open/open.zkey' }
+    mixedTestFiles = { wasm: './proof/mixed/mixed.wasm', zkey: './proof/mixed/mixed.zkey' }
+}
 
 class bqTest {
     #testId
@@ -322,8 +333,8 @@ class bqTest {
                     answers: getOpenAnswersArray(openAnswers),
                     salt
                 }, 
-                "./proof/open/open.wasm", 
-                "./proof/open/open.zkey"
+                openTestFiles.wasm, 
+                openTestFiles.zkey
             );
 
             return {
@@ -353,8 +364,8 @@ class bqTest {
                     openAnswers: getOpenAnswersArray(openAnswers),
                     salt
                 }, 
-                "./proof/mixed/mixed.wasm", 
-                "./proof/mixed/mixed.zkey"
+                mixedTestFiles.wasm, 
+                mixedTestFiles.zkey
             );
 
             return {
@@ -381,8 +392,8 @@ class bqTest {
                     answers: getMultipleChoiceAnswersArray(multipleChoiceAnswers),  
                     salt
                 }, 
-                "./proof/multiple/multiple.wasm", 
-                "./proof/multiple/multiple.zkey"
+                multipleTestFiles.wasm, 
+                multipleTestFiles.zkey
             );
 
             return {
