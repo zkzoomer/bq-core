@@ -8,6 +8,7 @@
     "test": "hardhat test"
   },
   "dependencies": {
+    "big-integer": "^1.6.51",
     "buffer": "^6.0.3",
     "ethers": "^5.7.2",
     "keccak256": "^1.0.6"
