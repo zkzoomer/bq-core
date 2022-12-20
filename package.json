@@ -11,7 +11,8 @@
     "big-integer": "^1.6.51",
     "buffer": "^6.0.3",
     "ethers": "^5.7.2",
-    "keccak256": "^1.0.6"
+    "keccak256": "^1.0.6",
+    "web-worker": "^1.2.0"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^1.0.1",
