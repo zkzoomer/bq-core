@@ -1,6 +1,12 @@
 # Using the bqSDK
 
-The bqSDK is centered around the _bqTest_ object. This can be used in two different ways:
+The bqSDK is centered around the _bqTest_ object. You can import it at the top of your file by doing:
+
+```javascript
+import { bqTest } from "bq-core"
+```
+
+This can be used in two different ways:
 - **Reading mode**: to just retrieve the on-chain data that defines a test.
 - **Solving mode**: extending on the reading mode usability, it also allows you to grade solutions, generate and verify the corresponding proofs, and post solving transactions.
 

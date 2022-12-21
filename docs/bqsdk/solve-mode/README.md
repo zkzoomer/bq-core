@@ -1,6 +1,24 @@
 # Using a _bqTest_ Object in Solving Mode
 
-First we will need to define a new solving mode _bqTest_. We can do so simply by running:
+To use a _bqTest_ object on solving mode, the necessary files for solving have to be made available: the _zkey_ and _wasm_ files needed for proving. When using bq-core inside a web application, you can do this by providing them on the `public` folder, with the following structure:
+
+```
+📦 public
+ ┗  📂 bq-core
+   ┣ 📂 mixed
+   ┃ ┣ 📜 mixed.wasm
+   ┃ ┗ 📜 mixed.zkey
+   ┣ 📂 multiple
+   ┃ ┣ 📜 multiple.wasm
+   ┃ ┗ 📜 multiple.zkey
+   ┗ 📂 open
+     ┣ 📜 open.wasm
+     ┗ 📜 open.zkey
+```
+
+These files are made available in [the repository](../../../proof/). Note that you will only need the proving files for the kinds of tests that you plan to support. That is, if you plan to only use mixed tests, you will not need the files located under the `multiple` and `open` folders.
+
+Once files are available, we can define a new solving mode _bqTest_. We can do so simply by running:
 
 ```js
 const solveModeTest = await bqTest.solveMode(

@@ -24,6 +24,7 @@
 
 * [Creating tests](direct-interfacing/creating-tests/README.md)
     * [Minting a new test](direct-interfacing/creating-tests/minting-new-test.md)
+    * [How to write a test](direct-interfacing/creating-tests/test-URI.md)
     * [Verifying a test](direct-interfacing/creating-tests/verifying-test.md)
     * [Invalidating a test](direct-interfacing/creating-tests/invalidating-test.md)
 

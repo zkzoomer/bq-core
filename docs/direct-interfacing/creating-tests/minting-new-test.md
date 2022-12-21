@@ -15,7 +15,7 @@ We can do so by calling the following function inside the [TestCreator.sol](../.
     ) external { ... }
 ```
 
-The values for *_testType*, *_nQuestions*, *_minimumGrade*, *_credentialLimit*, *_timeLimit*, *_requiredPass*, *_credentialsGained*, and *_testURI* are as defined for [the Test struct](../bq-tests/the-test-struct.md).
+The values for *_testType*, *_nQuestions*, *_minimumGrade*, *_credentialLimit*, *_timeLimit*, *_requiredPass*, and *_credentialsGained* are as defined for [the Test struct](../bq-tests/the-test-struct.md). The *_testURI_* is an external resource that holds more information about the test, like the questions it comprises. You can read more on the standards to follow under [how to write a test](./test-URI.md).
 
 The values given for *_solvingHashes* will depend on the test type specified:
 - **Multiple choice test**: single value array, containing the root of the multiple choice Merkle tree, where each leaf is the correct choice out of the given ones, as described above.
