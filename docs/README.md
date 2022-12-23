@@ -2,6 +2,20 @@
 
 This document aims to be a comprehensive guide to the [bq-core](https://github.com/0xdeenz/bq-core) repository.
 
+## Installing Block Qualified
+
+You can add bq-core to your project by running:
+
+```
+npm i https://github.com/0xdeenz/bq-core.git  
+```
+
+or
+
+```
+yarn add bq-core@https://github.com/0xdeenz/bq-core.git
+```
+
 ## What is Block Qualified?
 
 Block Qualified aims to become an open education platform where users can create their own learning experience. Anyone can gain credentials that attest to their knowledge, or verify the qualifications of others. All of this being done directly on-chain, with verifiable data, and preserving the privacy of users via zk proofs.
