@@ -9,7 +9,7 @@ You can access a full version of the documentation on [Gitbook](https://deenz.gi
 
 # How to Add bq-core to Your Website
 
-The source code for a sample implementation covering all of the bq-core functionalities is provided under [bq-core-react-app](https://github.com/0xdeenz/bq-core-react-app). (CURRENTLY BEING BUILT)
+The source code for a sample implementation covering all of the bq-core functionalities is provided under [bq-core-react-app](https://github.com/0xdeenz/bq-core-react-app).
 
 ## Deployed Contracts
 
