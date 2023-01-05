@@ -2,7 +2,6 @@
 
 ## Getting started
 * [About this documentation](README.md)
-<!-- * [Installation and setup](installation.md) -->
 
 ## Using the bqSDK
 
