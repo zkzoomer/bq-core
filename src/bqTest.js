@@ -16,9 +16,9 @@ const multipleVerificationKey = require("../proof/multiple/multiple_verification
 let multipleTestFiles, openTestFiles, mixedTestFiles
 if ( typeof window !== 'undefined' ) {
     window.Buffer = window.Buffer || require("buffer").Buffer;
-    multipleTestFiles = { wasm: 'bq-core/multiple/multiple.wasm', zkey: 'bq-core/multiple/multiple.zkey' }
-    openTestFiles = { wasm: 'bq-core/open/open.wasm', zkey: 'bq-core/open/open.zkey' }
-    mixedTestFiles = { wasm: 'bq-core/mixed/mixed.wasm', zkey: 'bq-core/mixed/mixed.zkey' }
+    multipleTestFiles = { wasm: require('bq-core/proof/multiple/multiple.wasm'), zkey: require('bq-core/proof/multiple/multiple.zkey') }
+    openTestFiles = { wasm: require('bq-core/proof/open/open.wasm'), zkey: require('bq-core/proof/open/open.zkey') }
+    mixedTestFiles = { wasm: require('bq-core/proof/mixed/mixed.wasm'), zkey: require('bq-core/proof/mixed/mixed.zkey') }
 } else {
     multipleTestFiles = { wasm: './proof/multiple/multiple.wasm', zkey: './proof/multiple/multiple.zkey' }
     openTestFiles = { wasm: './proof/open/open.wasm', zkey: './proof/open/open.zkey' }
