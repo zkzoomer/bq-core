@@ -380,10 +380,8 @@ class bqTest {
             }
 
         } else if ( this.#stats.testType === 100 ) {  // multiple choice test
-            // Answers provided must be numbers and less than 64 in number
-            if ( !(multipleChoiceAnswers).every(i => { return typeof i === 'number' }) ) { 
-                throw new TypeError('Answers must be numbers representing the multiple choices') 
-            }
+            // Answers provided must be numbers or array of numbers for questions with more than one answer
+            // Answers must be less than 64 in number
             if ( multipleChoiceAnswers.length > 64 ) { throw new RangeError('Surpassed maximum number of answers for a test') }
             
             // Generating proof and public signals
@@ -412,10 +410,16 @@ class bqTest {
         }
         
         function getMultipleChoiceAnswersArray(multipleChoiceAnswers) {
-            const answersArray = new Array(64).fill(0)
-            answersArray.forEach( (_, i) => { if ( i < multipleChoiceAnswers.length ) { 
-                answersArray[i] = multipleChoiceAnswers[i] 
-            }})
+            const answersArray = new Array(64).fill('0')
+            answersArray.forEach( (_, i) => {
+                if ( i < multipleChoiceAnswers.length ) { 
+                    if (Array.isArray(multipleChoiceAnswers[i])) {
+                        answersArray[i] = multipleChoiceAnswers[i].sort().join('')
+                    } else {
+                        answersArray[i] = multipleChoiceAnswers[i].toString()
+                    }
+                }
+            })
             return answersArray
         }
 
