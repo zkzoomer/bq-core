@@ -191,10 +191,16 @@ class bqTest {
 
         const getMultipleChoiceAnswersResult = ( multipleChoiceAnswers ) => {
             // Filling the array to 64 values
-            const answersArray = new Array(64).fill(0)
-            answersArray.forEach( (_, i) => { if ( i < multipleChoiceAnswers.length ) { 
-                answersArray[i] = multipleChoiceAnswers[i] 
-            }})
+            const answersArray = new Array(64).fill('0')
+            answersArray.forEach( (_, i) => {
+                if ( i < multipleChoiceAnswers.length ) { 
+                    if (Array.isArray(multipleChoiceAnswers[i])) {
+                        answersArray[i] = multipleChoiceAnswers[i].sort().join('')
+                    } else {
+                        answersArray[i] = multipleChoiceAnswers[i].toString()
+                    }
+                }
+            })
     
             // Checking if test is passed and returning the result
             return rootFromLeafArray(answersArray).toString() === this.#multipleChoiceRoot ? 100 : 0
