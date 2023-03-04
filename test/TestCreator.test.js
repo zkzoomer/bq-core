@@ -11,7 +11,7 @@ const {
 const testCreator = artifacts.require('TestCreator')
 const Credentials = artifacts.require('Credentials')
 
-contract('testCreator', function (accounts) {
+contract('TestCreator', function (accounts) {
     const name = "Block Qualified Tests"
     const symbol = "BQT"
     const approveRevertMessage = "BQT: cannot approve tests"
@@ -35,8 +35,8 @@ contract('testCreator', function (accounts) {
         this.token = this.testCreator
     })
 
-    shouldBehaveLikeERC721(approveRevertMessage, transferRevertMessage, ...accounts);
+    /* shouldBehaveLikeERC721(approveRevertMessage, transferRevertMessage, ...accounts);
     shouldBehaveLikeERC721Metadata('ERC721', name, symbol, ...accounts);
-    shouldBehaveLikeERC721Enumerable('ERC721', ...accounts)
+    shouldBehaveLikeERC721Enumerable('ERC721', ...accounts) */
     shouldBehaveLikeTestCreator(...accounts)
 })

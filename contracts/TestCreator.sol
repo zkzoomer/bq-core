@@ -27,6 +27,28 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableMap for EnumerableMap.UintToAddressMap;
     using Strings for uint256;
+
+    error TimeLimitInThePast();
+    error InvalidNumberOfQuestions();
+    error InvalidMinimumGrade();
+    error InvalidTestType();
+
+    error TestDoesNotExist();
+    error TestDoesNotHaveMultipleChoiceComponent();
+    error TestDoesNotHaveOpenAnswerComponent();
+    error TestAlreadyVerified();
+    error TestWasNotVerified();
+    error VerifyingTestThatIsNotOwn();
+    error InvalidatingTestThatIsNotOwn();
+
+    error TestCannotBeSolvedByOwner();
+    error MaximumNumberOfCredentialsReached();
+    error TimeLimitReached();
+    error RecipientDoesNotOwnRequiredToken();
+    error SolvingForAnotherTest();
+    error GradeBelowMinimum();
+    error ExistingCredentialHasBetterResult();
+    error TestWasInvalidated();
     
     // Token name
     string private _name = "Block Qualified Tests";
@@ -146,12 +168,20 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint256 _testId = _ntests;
 
         // If time and credential limits are set to zero then these limits on solving do not get enforced
-        require(_timeLimit > block.timestamp || _timeLimit == 0, "Time limit is in the past");
-        if(_requiredPass != address(0)) {
-            require(RequiredPass(_requiredPass).balanceOf(msg.sender) >= 0);  // dev: invalid required pass address provided
+        if (
+            _timeLimit != 0 
+            &&
+            _timeLimit <= block.timestamp
+        ) {
+            revert TimeLimitInThePast();
         }
-        require(_nQuestions >= 1 && _nQuestions <= 64, "Invalid number of questions");
-        require(_minimumGrade > 0 && _minimumGrade <= 100, "Invalid minimum grade");
+        
+        if(_requiredPass != address(0)) {
+            require(RequiredPass(_requiredPass).balanceOf(msg.sender) >= 0);  // @dev: invalid required pass address provided
+        }
+
+        if (_nQuestions == 0 || _nQuestions > 64) { revert InvalidNumberOfQuestions(); }
+        if (_minimumGrade == 0 || _minimumGrade > 100) { revert InvalidMinimumGrade(); }
         
         // Storing the test type information
         if (_testType == 0) {  // Open answers test, providing the [answerHashesRoot]
@@ -160,11 +190,11 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
             _multipleChoiceRoot[_testId] = _solvingHashes[0];
             _openAnswersRoot[_testId] = _solvingHashes[1];
         } else if (_testType == 100) {  // Multiple choice test, providing the [solutionHash]
-            require(_minimumGrade == 100, "Multiple choice test must have 100 as minimum grade");
-            require(_nQuestions == 1, "Multiple choice test must have 1 as number of open questions");
+            if (_minimumGrade != 100) { revert InvalidMinimumGrade(); }  // @dev multiple choice tests must have 100 as minimum grade
+            if (_nQuestions != 1) { revert InvalidNumberOfQuestions(); } // @dev multiple choice tests must have 1 as number of open questions
             _multipleChoiceRoot[_testId] = _solvingHashes[0];
         } else {
-            revert("Invalid test type");
+            revert InvalidTestType();
         }
 
         // Setting the given URI that holds all of the questions
@@ -195,11 +225,21 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * For the first iteration of the protocol, only the
      */
     function verifyTestAnswers(uint256 testId, uint256[] memory answerHashes) external {
-        require(_exists(testId), "Test does not exist");
-        require(_tests[testId].testType < 100, "Test is not open answer or mixed");
-        require(_openAnswersHashes[testId].length == 0, "Test was already verified");
-        require(ownerOf(testId) == msg.sender, "Verifying test that is not own");
-        require(answerHashes.length == _tests[testId].nQuestions, "Invalid number provided");
+        if (!_exists(testId)) { revert TestDoesNotExist(); }
+        if (
+            _tests[testId].testType == 100
+        ) {
+            revert TestDoesNotHaveOpenAnswerComponent();
+        }
+        if (_openAnswersHashes[testId].length > 0) {
+            revert TestAlreadyVerified();
+        }
+        if (ownerOf(testId) != msg.sender) {
+            revert VerifyingTestThatIsNotOwn();
+        }
+        if (answerHashes.length != _tests[testId].nQuestions) {
+            revert InvalidNumberOfQuestions();
+        }
 
         _openAnswersHashes[testId] = answerHashes;
     } 
@@ -208,7 +248,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * @dev Returns the struct that defines a Test
      */
     function getTest(uint256 testId) external view returns (Test memory) {
-        require(_exists(testId), "Test does not exist");
+        if (!_exists(testId)) { revert TestDoesNotExist(); }
         return _tests[testId];
     }
 
@@ -217,8 +257,14 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Also used with mixed tests
      */
     function getMultipleChoiceRoot(uint256 testId) external view returns (uint256) {
-        require(_exists(testId), "Test does not exist");
-        require(_tests[testId].testType > 0 && _tests[testId].testType <= 100, "Test is not multiple choice or mixed");
+        if (!_exists(testId)) { revert TestDoesNotExist(); }
+        if (
+            _tests[testId].testType == 0
+            || 
+            _tests[testId].testType > 100
+        ) {
+            revert TestDoesNotHaveMultipleChoiceComponent();
+        }
         return _multipleChoiceRoot[testId];
     }
 
@@ -227,8 +273,12 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Also used with mixed tests
      */
     function getOpenAnswersRoot(uint256 testId) external view returns (uint256) {
-        require(_exists(testId), "Test does not exist");
-        require(_tests[testId].testType < 100, "Test is not open answer or mixed");
+        if (!_exists(testId)) { revert TestDoesNotExist(); }
+        if (
+            _tests[testId].testType == 100
+        ) {
+            revert TestDoesNotHaveOpenAnswerComponent();
+        }
         return _openAnswersRoot[testId];
     }
 
@@ -237,9 +287,13 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Also used with mixed tests
      */
     function getOpenAnswersHashes(uint256 testId) external view returns (uint256[] memory) {
-        require(_exists(testId), "Test does not exist");
-        require(_tests[testId].testType < 100, "Test is not open answer or mixed");
-        require(_openAnswersHashes[testId].length > 0, "Test was not verified");
+        if (!_exists(testId)) { revert TestDoesNotExist(); }
+        if (
+            _tests[testId].testType == 100
+        ) {
+            revert TestDoesNotHaveOpenAnswerComponent();
+        }
+        if (_openAnswersHashes[testId].length == 0) { revert TestWasNotVerified(); }
         return _openAnswersHashes[testId];
     }
 
@@ -271,9 +325,13 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
      * Invalidating a test is final
      */
     function invalidateTest(uint256 testId) external nonReentrant {
-        require(_exists(testId), "Test does not exist");
-        require(_tests[testId].testType != 255, "Test was already invalidated");
-        require(ownerOf(testId) == msg.sender, "Invalidating test that is not own");
+        if (!_exists(testId)) { revert TestDoesNotExist(); }
+        if ( _tests[testId].testType == 255 ) {
+            revert TestWasInvalidated();
+        } 
+        if (ownerOf(testId) != msg.sender) {
+            revert InvalidatingTestThatIsNotOwn();
+        }
 
         // Test still lives on chain for reference, but can no longer be solved.
         _tests[testId].testType = 255;
@@ -290,41 +348,61 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
         uint[2] calldata c,
         uint[] calldata input  
     ) external nonReentrant {
-        require(recipient != ownerOf(testId), "Test cannot be solved by owner");
-        require(
-            _tests[testId].credentialLimit == 0 || _tests[testId].solvers < _tests[testId].credentialLimit, 
-            "Maximum number of credentials reached"
-        );
-        require(
-            _tests[testId].timeLimit == 0 || block.timestamp <= _tests[testId].timeLimit,  
-            "Time limit for this credential reached"
-        );
-        if (_tests[testId].requiredPass != address(0)) {
-            require(RequiredPass(_tests[testId].requiredPass).balanceOf(recipient) > 0, "Solver does not own the required token");
+        if (recipient == ownerOf(testId)) {
+            revert TestCannotBeSolvedByOwner();
         }
 
-        uint salt = uint(uint160(recipient));
+        if (
+            _tests[testId].credentialLimit != 0 
+            && 
+            _tests[testId].solvers == _tests[testId].credentialLimit
+        ) {
+            revert MaximumNumberOfCredentialsReached();
+        }
+
+        if (
+            _tests[testId].timeLimit != 0 
+            &&
+            block.timestamp >= _tests[testId].timeLimit
+        ) {
+            revert TimeLimitReached();
+        }
+
+        if(
+            _tests[testId].requiredPass != address(0)
+            &&
+            RequiredPass(_tests[testId].requiredPass).balanceOf(recipient) == 0
+        ) {
+            revert RecipientDoesNotOwnRequiredToken();
+        }
+
+        uint nullifier = uint(uint160(recipient));
         
         // Verify solution
-        require(verifierContract.verifyProof(_tests[testId].testType, a, b, c, input, salt), "Invalid proof");
+        require(verifierContract.verifyProof(_tests[testId].testType, a, b, c, input, nullifier), "Invalid proof");
 
         uint256 result;
 
         if ( _tests[testId].testType == 0 ) {  // Open answers test, providing [results, answerHashesRoot]
             // Ensuring the open answer test being solved is the one selected
-            require(input[1] == _openAnswersRoot[testId], "Solving for another test");
+            if (input[1] != _openAnswersRoot[testId]) {
+                revert SolvingForAnotherTest();
+            }
 
             // Get result
             result = (input[0] + _tests[testId].nQuestions > 64) ?  // prevent underflow
                 100 * (input[0] + _tests[testId].nQuestions - 64) / _tests[testId].nQuestions
             :
                 0;
-            require(result >= _tests[testId].minimumGrade, "Grade is below minimum");
-
+            if (result < _tests[testId].minimumGrade) {
+                revert GradeBelowMinimum();
+            }
         } else if ( _tests[testId].testType > 0 && _tests[testId].testType < 100 ) {  // Mixed test, providing [solutionHash, results, answersHashRoot]
             // Ensuring the open answer test being solved is the one selected
-            require(input[2] == _openAnswersRoot[testId], "Solving for another test");
-
+            if (input[2] != _openAnswersRoot[testId]) {
+                revert SolvingForAnotherTest();
+            }
+            
             // The testType being below 100 means it is a mixed test, and its value represents the weight of the multiple choice test
             result = (input[0] == _multipleChoiceRoot[testId] ? _tests[testId].testType : 0) 
                 + 
@@ -334,23 +412,26 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
                 :
                     0
                 );
-            require(result >= _tests[testId].minimumGrade, "Grade is below minimum");
-
+            if (result < _tests[testId].minimumGrade) {
+                revert GradeBelowMinimum();
+            }
         } else if ( _tests[testId].testType == 100 ) {  // Multiple choice test, providing [solutionHash]
-            // Get result
+            if (input[0] != _multipleChoiceRoot[testId]) {
+                revert SolvingForAnotherTest();
+            }
+            
             result = 100;
-
-            require(input[0] == _multipleChoiceRoot[testId], "Wrong solution");
-
         } else if ( _tests[testId].testType == 255 ) {
-            revert("Test has been deleted and can no longer be solved");
+            revert TestWasInvalidated();
         } 
 
         if (credentialsContract.getResults(recipient, testId) == 0) {
             // If the user had not received this credential, it increases the number of solvers
             _tests[testId].solvers++;
         } else {
-            require(result > credentialsContract.getResults(recipient, testId), "Your existing credential has a better result");
+            if (result <= credentialsContract.getResults(recipient, testId)) {
+                revert ExistingCredentialHasBetterResult();
+            }
         }
 
         credentialsContract.giveCredentials(recipient, testId, result);

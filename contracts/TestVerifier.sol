@@ -38,7 +38,7 @@ contract TestVerifier {
         uint[2][2] calldata b,
         uint[2] calldata c,
         uint[] calldata input,
-        uint salt
+        uint nullifier
     ) public view returns (bool r) {
         Proof memory proof;
         proof.A = Pairing.G1Point(a[0], a[1]);
@@ -65,9 +65,9 @@ contract TestVerifier {
             require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
             vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 1], input[i]));
         }
-        // Adding salt separetely, always the last of the public inputs of the proof
-        require(salt < snark_scalar_field,"verifier-gte-snark-scalar-field");
-        vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[input.length + 1], salt));
+        // Adding nullifier separetely, always the last of the public inputs of the proof
+        require(nullifier < snark_scalar_field,"verifier-gte-snark-scalar-field");
+        vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[input.length + 1], nullifier));
 
         if (!Pairing.pairingProd4(
             Pairing.negate(proof.A), proof.B,

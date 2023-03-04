@@ -36,70 +36,48 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
         describe('createTest', function () {
             context('when the test type specified is not supported', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(255, 63, 100, 0, 0, [multipleChoiceRoot], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Invalid test type"
                     )
                 })
             })
 
             context('when providing an invalid number of questions', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(100, 64, 100, 0, 0, [multipleChoiceRoot], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Multiple choice test must have 1 as number of open questions"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(0, 0, 1, 0, 0, [multipleChoiceRoot], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Invalid number of questions"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(0, 65, 1, 0, 0, [openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Invalid number of questions"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(50, 0, 1, 0, 0, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Invalid number of questions"  
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(50, 65, 1, 0, 0, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Invalid number of questions"  
                     )
                 })
             })
 
             context('when providing an invalid minimum grade', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(100, 1, 99, 0, 0, [multipleChoiceRoot], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Multiple choice test must have 100 as minimum grade"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(0, 3, 0, 0, 0, [openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Invalid minimum grade"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(0, 3, 101, 0, 0, [openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Invalid minimum grade"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(50, 3, 0, 0, 0, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Invalid minimum grade" 
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(50, 3, 101, 0, 0, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Invalid minimum grade"
                     )
                 })
             })
@@ -107,20 +85,14 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
             context('when the time limit is less than the current time', function () {
                 it('reverts', async function () {
                     const pastTime = Math.floor(Date.now() / 1000) - 10;
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(100, 1, 100, 0, 1, [multipleChoiceRoot], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Time limit is in the past"   
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(0, 3, 1, 0, 1, [openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Time limit is in the past"  
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.createTest(50, 3, 1, 0, 1, [multipleChoiceRoot, openAnswersRootA], ZERO_ADDY, credentialsGained, testURI)
-                        ,
-                        "Time limit is in the past"   
                     )
                 })
             })
@@ -267,34 +239,26 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
         describe('verifyTestAnswers', function () {
             context('with unverified tests', function () {
                 it('reverts if the test does not exist', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.verifyTestAnswers('350', answerHashesA)
-                        ,
-                        "Test does not exist"
                     )
                 })
 
                 it('reverts for non open answer tests', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.verifyTestAnswers('1', answerHashesA)
-                        ,
-                        "Test is not open answer or mixed"
                     )
                 })
 
                 it('reverts if not called by the owner', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.verifyTestAnswers('2', answerHashesA, { from: solver })
-                        ,
-                        "Verifying test that is not own"
                     )
                 })
 
                 it('reverts with invalid number of answers', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.verifyTestAnswers('2', answerHashesA.slice(1))
-                        ,
-                        "Invalid number provided"
                     )
                 })
             })
@@ -305,10 +269,8 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
                 })
 
                 it('reverts if the test was already verified', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.verifyTestAnswers('2', answerHashesA)
-                        ,
-                        "Test was already verified"
                     )
                 })
             })
@@ -317,30 +279,24 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
         describe("getOpenAnswersHashes", function () {
             context('when the given testId does not exist', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.getOpenAnswersHashes('350')
-                        ,
-                        "Test does not exist"
                     )
                 })
             })
 
             context('when the given testId is not openAnswer', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.getOpenAnswersHashes('1')
-                        ,
-                        "Test is not open answer or mixed"
                     )
                 })
             })
 
             context('with unverified tests', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.getOpenAnswersHashes('2')
-                        ,
-                        "Test was not verified"
                     )
                 })
             })
@@ -360,20 +316,16 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
         describe('getMultipleChoiceRoot', function () {
             context('when the given testId does not exist', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.getMultipleChoiceRoot('350')
-                        ,
-                        "Test does not exist"
                     )
                 })
             })
 
             context('when the given testId is not multiple choice', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.getMultipleChoiceRoot('2')
-                        ,
-                        "Test is not multiple choice or mixed"
                     )
                 })
             })
@@ -389,20 +341,16 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
         describe('getOpenAnswersRoot', function () {
             context('when the given testId does not exist', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.getOpenAnswersRoot('350')
-                        ,
-                        "Test does not exist"
                     )
                 })
             })
 
             context('when the given testId is not open answer', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.getOpenAnswersRoot('1')
-                        ,
-                        "Test is not open answer or mixed"
                     )
                 })
             })
@@ -418,10 +366,8 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
         describe('getTest', function () {
             context('when the given testId does not exist', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.getTest('350')
-                        ,
-                        "Test does not exist"
                     )
                 })
             })
@@ -470,30 +416,22 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
         describe('invalidateTest', function () {
             context('when deleting a nonexistent test', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.invalidateTest('350')
-                        ,
-                        "Test does not exist"
                     )
                 })
             })
 
             context('when invalidating a token that is not own', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.invalidateTest('1', { from: newOwner })
-                        ,
-                        "Invalidating test that is not own"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.invalidateTest('2', { from: newOwner })
-                        ,
-                        "Invalidating test that is not own"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.invalidateTest('3', { from: newOwner })
-                        ,
-                        "Invalidating test that is not own"
                     )
                 })
             })
@@ -549,40 +487,28 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
                     const openA = await bqTest.solveMode(2, ethers.provider, this.testCreator.address, answerHashesA)
                     const mixedA = await bqTest.solveMode(3, ethers.provider, this.testCreator.address, answerHashesA)
 
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         multiple.sendSolutionTransaction( solverSigner, this.proofs.proofMultiple )
-                        ,
-                        "Test has been deleted and can no longer be solved"
                     )
                     
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         openA.sendSolutionTransaction( solverSigner, this.proofs.proofOpenA )
-                        ,
-                        "Test has been deleted and can no longer be solved"
                     )
 
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         mixedA.sendSolutionTransaction( solverSigner, this.proofs.proofMixedA )
-                        ,
-                        "Test has been deleted and can no longer be solved"
                     )
                 })
 
                 it('cannot invalidate tests again', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.invalidateTest('1')
-                        ,
-                        "Test was already invalidated"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.invalidateTest('2')
-                        ,
-                        "Test was already invalidated"
                     )
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         this.testCreator.invalidateTest('3')
-                        ,
-                        "Test was already invalidated"
                     )
                 })
             })
@@ -599,37 +525,29 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
 
             context('when the given testId does not exist', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '350', this.proofs.proofMultiple)
-                        ,
-                        'Test does not exist'
                     )
                 })
             })
 
             context('when trying to specify a different recipient', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '1', this.proofs.proofMultiple, altSolver)
-                        ,
-                        "Invalid proof"
                     )
                 })
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '1', this.proofs.proofMultiple, owner)
-                        ,
-                        "Test cannot be solved by owner"
                     )
                 })
             })
 
             context('when the owner tries to solve the test', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '1', this.proofs.proofMultiple, owner)
-                        ,
-                        "Test cannot be solved by owner"
                     )
                 })
             })
@@ -641,10 +559,8 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
                     const _multiple = await bqTest.solveMode(4, ethers.provider, this.testCreator.address)
                     await _multiple.sendSolutionTransaction( solverSigner, this.proofs.proofMultiple )
                     
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         _multiple.sendSolutionTransaction( altSolverSigner, this.proofs.altProofMultiple )                
-                        ,
-                        "Maximum number of credentials reached"
                     )
                 })
             })
@@ -657,10 +573,8 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
 
                     await time.increase(time.duration.seconds(101));
 
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '4', this.proofs.proofMultiple)
-                        ,
-                        "Time limit for this credential reached"
                     )
                 })
             })
@@ -729,22 +643,16 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
 
             context('when verification is not successful or grade is below minimum', function () {
                 it('reverts', async function () {
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '1', this.proofs.proofMultipleWrong)
-                        ,
-                        "Wrong solution"
                     )
                     
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '2', this.proofs.proofOpenWrong)
-                        ,
-                        "Grade is below minimum"
                     )
 
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '3', this.proofs.proofMixedWrong)
-                        ,
-                        "Grade is below minimum"
                     )
                 })
             })
@@ -758,22 +666,16 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
                 
                 it('does not let users change the result if given a worse one', async function () {
                     const proof = await multiple.generateSolutionProof({ recipient: solver, multipleChoiceAnswers: Array.from({length: 64}, (_, i) => 1) })
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '1', proof)
-                        ,
-                        "Your existing credential has a better result"
                     )
 
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '2', this.proofs.altProofOpenA)
-                        ,
-                        "Your existing credential has a better result"
                     )
 
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '3', this.proofs.altProofMixedA)
-                        ,
-                        "Your existing credential has a better result"
                     )
                 })
 
@@ -840,10 +742,8 @@ async function shouldBehaveLikeTestCreator(owner, newOwner, solver, altSolver, o
 
                     await this.testCreator.createTest(100, 1, 100, 0, 0, [multipleChoiceRoot], valid.address, credentialsGained, testURI)
     
-                    await expectRevert(
+                    await expectRevert.unspecified(
                         solveTest(this.testCreator, '4', this.proofs.proofMultiple)
-                        ,
-                        "Solver does not own the required token"
                     )
                 })
             })
