@@ -26,4 +26,4 @@ One can see that the inputs for generating this single proof are a combination o
 
 These two resulting Merkle roots get checked inside the smart contract the same way as described above for each of the components of the mixed test. If the resulting grade, which is a sum of the multiple choice component (weighted by the value of *testType*) and the open answers component, is above the specified minimum for this *testId*, the solver is credited a non-transferable BQC (Block Qualified Credential) NFT that is linked to this test.
 
-The files used above refer to [mixed.wasm](../../../proof/mixed/mixed.wasm) and [mixed.zkey](../../../proof/mixed/mixed.zkey).
+The files used above refer to [mixed.wasm](https://blockqualified.s3.us-east-2.amazonaws.com/mixed.wasm) and [mixed.zkey](https://blockqualified.s3.us-east-2.amazonaws.com/mixed.zkey).

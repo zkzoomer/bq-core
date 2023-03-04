@@ -24,4 +24,4 @@ The resulting public signals will be a three value array: two output signals and
 
 This resulting Merkle root gets checked inside the smart contract with the one that the credential issuer provided as the defining open answers hash (as defined above) for this *testId*. If they match and the solver's grade (out of 100) is above the specified minimum for this *testId*, the solver is credited a non-transferable BQC (Block Qualified Credential) NFT that is linked to this test.
 
-The files used above refer to [open.wasm](../../../proof/open/open.wasm) and [open.zkey](../../../proof/open/open.zkey).
+The files used above refer to [open.wasm](https://blockqualified.s3.us-east-2.amazonaws.com/open.wasm) and [open.zkey](https://blockqualified.s3.us-east-2.amazonaws.com/open.wasm).

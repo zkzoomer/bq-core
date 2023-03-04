@@ -22,4 +22,4 @@ The resulting public signals will be a two value array: one output signal and on
     
 This resulting Merkle root gets checked inside the smart contract with the one that the credential issuer provided as the defining multiple choice hash (as explained above) for this *testId*. If they match, the solver is credited a non-transferable BQC (Block Qualified Credential) NFT that is linked to this test.
 
-The files used above refer to [multiple.wasm](../../../proof/multiple/multiple.wasm) and [multiple.zkey](../../../proof/multiple/multiple.zkey).
+The files used above refer to [multiple.wasm](https://blockqualified.s3.us-east-2.amazonaws.com/multiple.wasm) and [multiple.zkey](https://blockqualified.s3.us-east-2.amazonaws.com/multiple.wasm).
