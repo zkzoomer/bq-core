@@ -4,6 +4,7 @@ require('@nomiclabs/hardhat-truffle5');
 require("@nomiclabs/hardhat-etherscan");
 require('hardhat-contract-sizer');
 require('hardhat-gas-reporter');
+require('./src/utils/create_test')
 
 const fs = require('fs');
 const mnemonic = fs.readFileSync(".secret").toString().trim();
@@ -22,6 +23,9 @@ module.exports = {
       accounts: {
         mnemonic: mnemonic
       }
+    },
+    dev: {
+      url: 'HTTP://127.0.0.1:7545'
     }
   },
   gasReporter: {

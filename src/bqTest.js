@@ -8,22 +8,9 @@ const testCreatorAbi = require('./contracts/TestCreator.json')
 const credentialsAbi = require ('./contracts/Credentials.json')
 
 // Verification keys
-const openVerificationKey = require("../proof/open/open_verification_key.json")
-const mixedVerificationKey = require("../proof/mixed/mixed_verification_key.json")
-const multipleVerificationKey = require("../proof/multiple/multiple_verification_key.json")
-
-// Defining the Buffer library for the browser only, and the necessary files for generating proofs
-let multipleTestFiles, openTestFiles, mixedTestFiles
-if ( typeof window !== 'undefined' ) {
-    window.Buffer = window.Buffer || require("buffer").Buffer;
-    multipleTestFiles = { wasm: require('bq-core/proof/multiple/multiple.wasm'), zkey: require('bq-core/proof/multiple/multiple.zkey') }
-    openTestFiles = { wasm: require('bq-core/proof/open/open.wasm'), zkey: require('bq-core/proof/open/open.zkey') }
-    mixedTestFiles = { wasm: require('bq-core/proof/mixed/mixed.wasm'), zkey: require('bq-core/proof/mixed/mixed.zkey') }
-} else {
-    multipleTestFiles = { wasm: './proof/multiple/multiple.wasm', zkey: './proof/multiple/multiple.zkey' }
-    openTestFiles = { wasm: './proof/open/open.wasm', zkey: './proof/open/open.zkey' }
-    mixedTestFiles = { wasm: './proof/mixed/mixed.wasm', zkey: './proof/mixed/mixed.zkey' }
-}
+const openVerificationKey = require("./keys/open_verification_key.json")
+const mixedVerificationKey = require("./keys/mixed_verification_key.json")
+const multipleVerificationKey = require("./keys/multiple_verification_key.json")
 
 class bqTest {
     #testId
@@ -317,7 +304,7 @@ class bqTest {
     async generateSolutionProof({ 
         recipient, 
         openAnswers = [], 
-        multipleChoiceAnswers = [] 
+        multipleChoiceAnswers = []
     }) {
         if ( !ethers.utils.isAddress(recipient) ) {
             throw new TypeError('Address given for the recipient is not valid')
@@ -339,8 +326,8 @@ class bqTest {
                     answers: getOpenAnswersArray(openAnswers),
                     salt
                 }, 
-                openTestFiles.wasm, 
-                openTestFiles.zkey
+                'https://blockqualified.s3.us-east-2.amazonaws.com/open.wasm', 
+                'https://blockqualified.s3.us-east-2.amazonaws.com/open.zkey'
             );
 
             return {
@@ -370,8 +357,8 @@ class bqTest {
                     openAnswers: getOpenAnswersArray(openAnswers),
                     salt
                 }, 
-                mixedTestFiles.wasm, 
-                mixedTestFiles.zkey
+                'https://blockqualified.s3.us-east-2.amazonaws.com/mixed.wasm', 
+                'https://blockqualified.s3.us-east-2.amazonaws.com/mixed.zkey'
             );
 
             return {
@@ -396,8 +383,8 @@ class bqTest {
                     answers: getMultipleChoiceAnswersArray(multipleChoiceAnswers),  
                     salt
                 }, 
-                multipleTestFiles.wasm, 
-                multipleTestFiles.zkey
+                'https://blockqualified.s3.us-east-2.amazonaws.com/multiple.wasm', 
+                'https://blockqualified.s3.us-east-2.amazonaws.com/multiple.zkey'
             );
 
             return {
