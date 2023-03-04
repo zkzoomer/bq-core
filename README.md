@@ -21,9 +21,9 @@ The source code for a sample implementation covering all of the bq-core function
 
 Contracts have only been deployed _officially_ on the test networks for now. You can access these over at:
 
-- TestCreator.sol: [0x403E6BBCB3Ddbe3487c09E8827e5dEf058FE6db4](https://mumbai.polygonscan.com/address/0x403E6BBCB3Ddbe3487c09E8827e5dEf058FE6db4#code)
-- Credentials.sol: [0x1B54cCe0f362fF29696c710Fa86B9Add98164C88](https://mumbai.polygonscan.com/address/0x1B54cCe0f362fF29696c710Fa86B9Add98164C88#code)
-- TestVerifier.sol: [0xE6cd4a671d06D91E71c77173F85E3C043EE74DCF](https://mumbai.polygonscan.com/address/0xE6cd4a671d06D91E71c77173F85E3C043EE74DCF#code)
+- TestCreator.sol: [0xECe4239a93F97e52aE88b64228d38e39195B9e9A](https://mumbai.polygonscan.com/address/0xECe4239a93F97e52aE88b64228d38e39195B9e9A#code)
+- Credentials.sol: [0xc8c0A832e04Ea78E46bDf0e133aB525840b1c53d](https://mumbai.polygonscan.com/address/0xc8c0A832e04Ea78E46bDf0e133aB525840b1c53d#code)
+- TestVerifier.sol: [0x3561B5ccD0b058c80884E6a6Fa1205fb0d249c43](https://mumbai.polygonscan.com/address/0x3561B5ccD0b058c80884E6a6Fa1205fb0d249c43#code)
 
 You may still choose to deploy these smart contracts yourself.
 

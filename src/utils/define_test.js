@@ -1,9 +1,10 @@
+const keccak256 = require('keccak256')
 const { rootFromLeafArray } = require("../../src/poseidon")
 
-const correctMultipleChoiceAnswers = []
-const correctOpenAnswers = []
+const correctMultipleChoiceAnswers = new Array(64).fill('1') 
+const correctOpenAnswers = new Array(64).fill('deenz') 
 
-console.log("solutionHash: ", rootFromLeafArray(getMultipleChoiceAnswersArray(correctMultipleChoiceAnswers)).toString())
+console.log("multipleChoiceRoot: ", rootFromLeafArray(getMultipleChoiceAnswersArray(correctMultipleChoiceAnswers)).toString())
 console.log("answerHashesRoot: ", rootFromLeafArray(getOpenAnswersArray(correctOpenAnswers)).toString())
 
 function getMultipleChoiceAnswersArray( multipleChoiceAnswers ) {
