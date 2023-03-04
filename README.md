@@ -3,6 +3,12 @@
 Get an NFT verifying your credentials by solving tests directly on-chain. 
 Powered by ZK-SNARKS.
 
+# Tests
+
+```
+npm test
+```
+
 ## Documentation
 
 You can access a full version of the documentation on [Gitbook](https://deenz.gitbook.io/bq-core/), or navigate to the [docs](./docs/) folder.
