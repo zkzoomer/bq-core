@@ -38,6 +38,9 @@ task("create-test", "Creates a test")
       taskArgs.testURI
     )
 
-    const data = await testCreator.getTest('1')
+    const supply = await testCreator.totalSupply()
+
+    const data = await testCreator.getTest(supply)
+    console.log(`Credential #${supply} created:`)
     console.log(data)
   })
