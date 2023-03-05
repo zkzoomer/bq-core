@@ -41,6 +41,6 @@ task("create-test", "Creates a test")
     const supply = await testCreator.totalSupply()
 
     const data = await testCreator.getTest(supply)
-    console.log(`Credential #${supply} created:`)
+    console.log(`Test #${supply} created:`)
     console.log(data)
   })
