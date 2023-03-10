@@ -51,7 +51,7 @@ contract TestCreator is ERC165Storage, IERC721, IERC721Metadata, IERC721Enumerab
     error TestWasInvalidated();
     
     // Token name
-    string private _name = "Block Qualified Tests";
+    string private _name = "Block Qualified Tests v1";
     // Token symbol
     string private _symbol = "BQT";
 

@@ -28,9 +28,9 @@ Exams and credentials both work as non-transferable ERC721 tokens. Exams, called
 
 Contracts have only been deployed _officially_ on the test networks for now. You can access these over at:
 
-- TestCreator.sol: [0x403E6BBCB3Ddbe3487c09E8827e5dEf058FE6db4](https://mumbai.polygonscan.com/address/0x403E6BBCB3Ddbe3487c09E8827e5dEf058FE6db4#code)
-- Credentials.sol: [0x1B54cCe0f362fF29696c710Fa86B9Add98164C88](https://mumbai.polygonscan.com/address/0x1B54cCe0f362fF29696c710Fa86B9Add98164C88#code)
-- TestVerifier.sol: [0xE6cd4a671d06D91E71c77173F85E3C043EE74DCF](https://mumbai.polygonscan.com/address/0xE6cd4a671d06D91E71c77173F85E3C043EE74DCF#code)
+- TestCreator.sol: [0x879919ebA0A48B4AF966e2B43c16B17A906d4DE9](https://mumbai.polygonscan.com/address/0x879919ebA0A48B4AF966e2B43c16B17A906d4DE9#code)
+- Credentials.sol: [0x8002C94BDad20F64ACE040C74eBFE262c0A0aE25](https://mumbai.polygonscan.com/address/0x8002C94BDad20F64ACE040C74eBFE262c0A0aE25#code)
+- TestVerifier.sol: [0x23F5f7Fe1829f86C8C0bC35C4a2B068D664Eba9c](https://mumbai.polygonscan.com/address/0x23F5f7Fe1829f86C8C0bC35C4a2B068D664Eba9c#code)
 
 ## Help and Support
 
