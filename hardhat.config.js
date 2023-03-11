@@ -21,7 +21,13 @@ module.exports = {
     mumbai_testnet: {
       url: 'https://rpc-mumbai.maticvigil.com',  // RPC used just for deploying
       accounts: {
-        mnemonic: mnemonic
+        mnemonic
+      }
+    },
+    optimism: {
+      url: 'https://mainnet.optimism.io	',
+      accounts: {
+        mnemonic
       }
     },
     dev: {
