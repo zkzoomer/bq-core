@@ -1,6 +1,6 @@
 const ethers = require('ethers')
 const keccak256 = require('keccak256')
-const { groth16 } = require("./snarkjs");  // change to "snarkjs" when running npx hardhat test
+const { groth16 } = require("snarkjs");  // change to "snarkjs" when running npx hardhat test
 const { poseidon, rootFromLeafArray } = require('./poseidon.js')
 
 // Contract interfaces
