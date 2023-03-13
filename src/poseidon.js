@@ -1,4 +1,4 @@
-const { Scalar, F1Field, utils } = require("./ffjavascript");
+const { Scalar, F1Field, utils } = require("ffjavascript");
 
 const poseidonConstants = require('./utils/poseidon_constants_opt')
 
